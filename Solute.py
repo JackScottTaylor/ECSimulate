@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.linalg import solve_banded
+from typing import Annotated
+from numpy.typing import NDArray
 
 class Solute:
     '''
@@ -16,7 +18,7 @@ class Solute:
             D:         float,
             conc_bulk: float = 0.0,
             charge:    int   = 0
-            ) -> None:
+        ) -> None:
         self.name       = name
         self.D          = D         # Diffusion coefficient in cm²s⁻¹
         self.conc_bulk  = conc_bulk # Bulk concentration in mol dm⁻³
@@ -26,7 +28,7 @@ class Solute:
     def initialise_concentration(
             self,
             npoints: int
-            ) -> None:
+        ) -> None:
         '''
         Sets up the concentrations of the solute in the solution by creating an 
         array of length npoints, setting everywhere to the bulk concentration.
@@ -44,7 +46,7 @@ class Solute:
             self,
             dx:  float,
             dt:  float
-            ) -> float:
+        ) -> float:
         '''
         Calculates K = D*dt/2dx² (dimensionless)
 
@@ -62,7 +64,7 @@ class Solute:
             self,
             dx: float,
             dt: float
-            ) -> np.ndarray:
+        ) -> np.ndarray:
         '''
         Constructs the banded matrix A for modelling diffusion via the Crank-
         Nicholson method, with a reflective wall boundary condition on the left
@@ -96,7 +98,7 @@ class Solute:
             self,
             dx: float,
             dt: float
-            ) -> np.ndarray:
+        ) -> np.ndarray:
         '''
         Constructs the matrix B for modelling diffusion via Crank-Nicholson
         method, with a reflective wall boundary condition on the left and a
@@ -131,7 +133,7 @@ class Solute:
             self,
             dx: float,
             dt: float
-            ) -> None:
+        ) -> None:
         '''
         Construct and save the reusable matrices relevant for modelling
         diffusion of the solute via the Crank-Nicholson technique.
@@ -145,7 +147,7 @@ class Solute:
     
     def diffuse(
             self
-            ) -> None:
+        ) -> None:
         '''
         Updates the concentration of the solute in the solution by allowing
         diffusion to occur over one time step using the Crank-Nicholson method.
@@ -161,3 +163,25 @@ class Solute:
             self.A_banded,
             self.B @ self.conc
             )
+        
+    def diffuse_coupled_kinetics(
+            self,
+            R: np.ndarray
+        ) -> None:
+        '''
+        Updates the concentration of the solute in the solution by using the
+        Crank-Nicholson approach. In this case changes due to reaction kinetics
+        are also included and all changes treated together. The non-diffusion
+        changes are passed in the 1D numpy array R. R is then made into a 
+        diagonal matrix such that the concentration is updated by solving the 
+        matrix equation A * conc_new = (B + R) * conc_old.
+
+        :param R: 1D numpy array detailing the non-diffusion changes to
+            concentration for the solute over the correct time-step.
+        '''
+        self.conc = solve_banded(
+            (1,1),
+            self.A_banded,
+            (self.B + np.diag(R)) @ self.conc
+            )
+    
