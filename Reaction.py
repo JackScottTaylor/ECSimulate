@@ -28,6 +28,7 @@ class Reaction:
         self.products       = products
         self.rate_constant  = rate_constant
 
+
     def rate(
             self
         ) -> float:
