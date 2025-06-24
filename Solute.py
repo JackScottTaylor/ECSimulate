@@ -182,6 +182,6 @@ class Solute:
         self.conc = solve_banded(
             (1,1),
             self.A_banded,
-            (self.B + np.diag(R)) @ self.conc
+            self.B @ self.conc + R
             )
     
