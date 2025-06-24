@@ -129,7 +129,7 @@ class Solution:
         ids = {self.solutes[i]: i for i in range(n_solutes)}
         for r in self.redoxes:
             red, ox = ids[r.reduced_species], ids[r.oxidised_species]
-            K = r.equilibrium_concentration_constant(self.electrode_potential)
+            K = r.equilibrium_constant(self.electrode_potential)
             M[red, ox], M[ox, red] = 1/K, K
         return M
 
@@ -199,7 +199,7 @@ class Solution:
         Goes through all of the groups connected by redox potentials and sets
         the Nernstian equilibrium
         '''
-        scaling_matrix = self.redox_concentration_scaling_matrix()
+        scaling_matrix = self.redox_conc_scaling_matrix()
         for group in self.redox_connectivity:
             # If non-redox-active then do nothing
             if len(group) == 1: continue
@@ -265,7 +265,7 @@ class Solution:
         solute_conc_gradients = [np.zeros(n) for _ in self.solutes]
         # Iterate through each reaction and update the conc gradients
         for reaction in self.reactions:
-            rate = reaction.rate(n)
+            rate = reaction.rate(self.npoints)
             # For each reactant, subtract the rate from the gradient
             for reactant in reaction.reactants:
                 index = solute_to_index[reactant]
@@ -291,7 +291,7 @@ class Solution:
             solute.diffuse_coupled_kinetics(gradient)
 
     
-    def cyclic_voltammetry_modular(
+    def cyclic_voltammetry(
             self,
             E_min: float,
             E_max: float,
@@ -299,7 +299,7 @@ class Solution:
             n_cycles: int = 1,
             T: float = 298.15,
             start_positive_direction: bool = True,
-            kinetics_time_split: bool = True,
+            kinetics_time_split: int = 1,
             save_concs: bool = False,
         ) -> List[np.ndarray]:
         '''
@@ -448,6 +448,8 @@ class Solution:
                     current = (charge_after - charge_before) / self.dt
                     # Append the potential and current to the lists
                     potentials.append(E); currents.append(current)
+
+
 
                     # If saving concentrations, append the concentrations
                     if save_concs:

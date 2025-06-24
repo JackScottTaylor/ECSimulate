@@ -2,6 +2,8 @@ from .Solute import Solute
 
 from typing import List
 
+import numpy as np
+
 class Reaction:
     '''
     Class for defining a reaction between solutes.
@@ -30,7 +32,7 @@ class Reaction:
 
 
     def rate(
-            self
+            self, n
         ) -> float:
         '''
         This function calculates the rate of the reaction at each point in the 
@@ -39,14 +41,10 @@ class Reaction:
 
         :return: The rate of the reaction in mol dm⁻³ s⁻¹
         '''
-        rate = self.rate_constant
+        rate = self.rate_constant * np.ones(n)
         for reactant in self.reactants:
-            if not hasattr(reactant, 'conc'):
-                raise ValueError(
-                    f'Reactant {reactant.name} concentration has not been ' \
-                    'initialised'
-                    )
-            rate = rate * reactant.conc
+            rate *= reactant.conc
         return rate
+
             
             
