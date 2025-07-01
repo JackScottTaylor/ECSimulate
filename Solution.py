@@ -449,8 +449,6 @@ class Solution:
                     # Append the potential and current to the lists
                     potentials.append(E); currents.append(current)
 
-
-
                     # If saving concentrations, append the concentrations
                     if save_concs:
                         for solute in self.solutes:
