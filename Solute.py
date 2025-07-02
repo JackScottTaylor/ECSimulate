@@ -185,3 +185,26 @@ class Solute:
             self.B @ self.conc + R
             )
     
+    def second_space_derivative(
+            self,
+            dx: float
+        ) -> np.ndarray:
+        '''
+        This uses finite differences technique to compute the second spatial 
+        derivative
+
+        :param dx: The spatial grid spacing in cm
+        '''
+        return (-2 * self.conc[1:-1] + self.conc[2:] + self.conc[:-2]) / dx**2
+    
+    def diffusion_conc_gradient(
+            self,
+            dx: float
+        ) -> np.ndarray:
+        '''
+        Returns the second space derivative multiplied by the diffusion
+        coefficient
+
+        :param dx: Th spatial grid spacing in cm
+        '''
+        return self.D * self.second_space_derivative(dx)
