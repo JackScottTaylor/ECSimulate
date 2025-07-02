@@ -1,0 +1,1 @@
+FARADAY_CONSTANT = 96485.3321233100184  # C/mol, Faraday's constant

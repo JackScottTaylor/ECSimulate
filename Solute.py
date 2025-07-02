@@ -17,7 +17,7 @@ class Solute:
             name:      str,
             D:         float,
             conc_bulk: float = 0.0,
-            charge:    int   = 0
+            charge:    int   = 0,
         ) -> None:
         self.name       = name
         self.D          = D         # Diffusion coefficient in cm²s⁻¹
@@ -208,3 +208,29 @@ class Solute:
         :param dx: Th spatial grid spacing in cm
         '''
         return self.D * self.second_space_derivative(dx)
+    
+    def current_contribution(
+            self
+        ) -> float:
+        '''
+        Calculates and returns the contribution to current at the electrode
+        from the solute. The returned value is to be converted by a Solution
+        object into the correct units of A.
+
+        Convert everything in to SI units, except for charge.
+        self.D is in cm²/s, so we need to convert it to m²/s.
+        self.conc is in mol/dm³, so we need to convert it to mol/m³.
+
+        The current contribution is given by the equation:
+        I_i = z_i * D_i * (C_i(x=1, t) - C_i(x=0, t))
+
+        therefore cm²/s to m²/s introduces a factor of 10⁻⁴,
+        mol/dm³ to mol/m³ introduces a factor of 10³
+        Therefore total factor is 10⁻¹ for the current contribution.
+
+        :return: The solute's contribution to the current at the electrode from
+            the flux to the left-hand-side of the simulation window.
+        '''
+        return self.charge * self.D * 1e-1 * (self.conc[1] - self.conc[0])
+        
+            
