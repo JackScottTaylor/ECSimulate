@@ -3,6 +3,8 @@ from scipy.linalg import solve_banded
 from typing import Annotated
 from numpy.typing import NDArray
 
+from ._SoluteNumbaFunctions import second_space_derivative_numba
+
 class Solute:
     '''
     Represents a solute in a solution.
@@ -191,11 +193,14 @@ class Solute:
         ) -> np.ndarray:
         '''
         This uses finite differences technique to compute the second spatial 
-        derivative
+        derivative. 
 
         :param dx: The spatial grid spacing in cm
         '''
-        return (-2 * self.conc[1:-1] + self.conc[2:] + self.conc[:-2]) / dx**2
+        return second_space_derivative_numba(
+            self.conc,
+            dx
+        )
     
     def diffusion_conc_gradient(
             self,
@@ -203,11 +208,16 @@ class Solute:
         ) -> np.ndarray:
         '''
         Returns the second space derivative multiplied by the diffusion
-        coefficient
+        coefficient.
+
+        This has horrific units so will convert to SI.
+        Currently, mol/dm³ is used for concentration, so we need to convert
+        to mol/cm³, so it will vibe with the diffusion coefficient and spatial
+        grid spacing.
 
         :param dx: Th spatial grid spacing in cm
         '''
-        return self.D * self.second_space_derivative(dx)
+        return self.D * self.second_space_derivative(dx) * 1e-3
     
     def current_contribution(
             self
