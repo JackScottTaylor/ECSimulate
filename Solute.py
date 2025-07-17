@@ -83,14 +83,14 @@ class Solute:
         # Initialise the banded matrix A
         A_banded          = np.zeros((3, self.npoints))
         # Upper diagonal all values equal to -K
-        A_banded[0, 1:  ] = -K
+        A_banded[0, 2:  ] = -K
         # Lower diagonal all but last value equal to -K
         # Last value is 0 because of the constant concentration boundary
         A_banded[2,  :-2] = -K
         # Main diagonal, 1 + 2K equal everywhere except first and last
         A_banded[1, 1:-1] = 1 + 2*K
         # First row, reflective wall boundary condition
-        A_banded[1, 0   ] = 1 + K
+        A_banded[1, 0   ] = 1
         # Last row, constant concentration boundary condition
         A_banded[1, -1  ] = 1
         return A_banded
@@ -124,8 +124,8 @@ class Solute:
             B[i, i+1] = K
 
         # Reflective Wall Boundary Conditions
-        B[0, 0] = 1 - K
-        B[0, 1] = K
+        B[0, 0] = 1
+
         # Dirichlet Boundary Condition
         B[-1, -1] = 1
         return B
@@ -241,6 +241,6 @@ class Solute:
         :return: The solute's contribution to the current at the electrode from
             the flux to the left-hand-side of the simulation window.
         '''
-        return self.charge * self.D * 1e-1 * (self.conc[1] - self.conc[0])
+        return self.charge * self.D * 1e-1 * (self.conc[2] - self.conc[1])
         
             
