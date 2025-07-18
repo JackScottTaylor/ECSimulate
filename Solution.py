@@ -59,7 +59,7 @@ class Solution(
         '''
         self.dx = dx
         self.dt = dt
-        self.A  = A
+        self.A  = A * 1e-6  # Convert mm² to m²
         # Choose number of grid points to get close to desired width as possible
         npoints = int(width / dx)
         # For each solute, set up the concentrations and diffusion matrices
@@ -73,7 +73,7 @@ class Solution(
             self.redox_connectivity_matrix()
         )
         # Precompute scaling factor for current from flux
-        self.FAdx = - FARADAY_CONSTANT * A / dx
+        self.FAdx = - FARADAY_CONSTANT * A / (dx * 1e-2)
 
     
     def redox_connectivity_matrix(self) -> np.ndarray:
@@ -315,4 +315,4 @@ class Solution(
         '''
         I = sum(s.current_contribution() for s in self.solutes)
         I *= self.FAdx
-        return I
+        return I * 1e-3
