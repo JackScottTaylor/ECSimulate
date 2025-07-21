@@ -299,10 +299,21 @@ class Solution(
         gradients = self.reaction_concentration_time_gradients()
         gradients = [g * self.dt for g in gradients]
         for solute, gradient in zip(self.solutes, gradients):
+            gradient[0], gradient[-1] = 0, 0
             solute.diffuse_coupled_kinetics(gradient)
 
     
+    def diffusion_Strang(self) -> None:
+        '''
+        This method allows chemical kinetics and diffusion to occur via
+        Strang splitting. Reaction first happenn over dt/2 then diffusion
+        over dt, then reaction again over dt/2.
+        '''
+        self.run_chemical_reactions(time_split=2)
+        self.diffuse()
+        self.run_chemical_reactions(time_split=2)
 
+    
     def current_from_flux(
             self
             ) -> float:

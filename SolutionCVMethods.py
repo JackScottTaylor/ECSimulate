@@ -379,7 +379,7 @@ class SolutionCVMethods:
                     # Allow Nernstian equilibrium to occur
                     self.Nernstian_equilibrium()
                     # Have diffusion and chemical reactions occur at same time.        
-                    self.diffuse_coupled_kinetics()
+                    self.diffusion_Strang()
                     # Calculate current using the fluxes
                     current = self.current_from_flux()
                     # Append the potential and current to the lists

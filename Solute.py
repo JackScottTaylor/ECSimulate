@@ -188,6 +188,8 @@ class Solute:
             self.A_banded,
             self.B @ self.conc + R
             )
+        # Set the ghost point concentration to the first point
+        self.conc[0] = self.conc[1]
     
     def second_space_derivative(
             self,
