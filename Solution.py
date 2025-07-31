@@ -75,6 +75,41 @@ class Solution(
         # Precompute scaling factor for current from flux
         self.FAdx = - FARADAY_CONSTANT * A / (dx * 1e-2)
 
+
+    def initialise_variable_dxs(
+            self,
+            dxs:   np.ndarray,
+            dt:    float,
+            A:     float = np.pi * 1.5 ** 2
+        ) -> None:
+        '''
+        Sets up parameters for the simulation including the width of the 
+        simulation in cm and the spacing of the grid in cm.
+        Each solute in the solution is set to their bulk concentrations
+
+        :param dxs: The spacing of the grid in cm
+        :param dt: The time-step spacing which will be considered in seconds
+        :param A: The area of the electrode in mm², the default is a circular
+            electrode with radius 1.5 mm (A = π * 1.5²)
+        '''
+        self.dxs = dxs
+        self.dt = dt
+        self.A  = A * 1e-6  # Convert mm² to m²
+        # Number of points is number of spacings plus one
+        npoints = len(dxs) + 1
+        # For each solute, set up the concentrations and diffusion matrices
+        for solute in self.solutes:
+            solute.initialise_concentration(npoints)
+            solute.save_diffusion_matrices_variable_dxs(dxs, dt)
+        # Save number of grid points
+        self.npoints = npoints
+        # Save the redox connectiveness
+        self.redox_connectivity = self.extract_connected_groups(
+            self.redox_connectivity_matrix()
+        )
+        # Precompute scaling factor for current from flux using first spacing.
+        self.FAdx = - FARADAY_CONSTANT * A / (dxs[0] * 1e-2)
+
     
     def redox_connectivity_matrix(self) -> np.ndarray:
         '''

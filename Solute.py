@@ -61,6 +61,25 @@ class Solute:
         K = self.D * dt / (2 * dx**2)
         return K
     
+    def calculate_K_variable_dx(
+            self,
+            dt: float,
+            dx_j: float,
+            dx_j1: float
+        ) -> float:
+        '''
+        Calculates K = D*dt / (dx_j*dx_{j-1}*(dx_j+dx_{j-1}))
+
+        This value is used in the construction of the matrices for modelling 
+        diffusion via Crank-Nicholson.
+
+        :param dt: The time step in seconds
+        :param dx_j: The spatial separation between points j-1 and j in cm
+        :param dx_j1: The spatial separation between points j and j+1 in cm
+        :return: The calculated K value
+        '''
+        return self.D * dt / (dx_j*dx_j1*(dx_j+dx_j1))
+
 
     def construct_A_banded_format(
             self,
@@ -94,7 +113,42 @@ class Solute:
         # Last row, constant concentration boundary condition
         A_banded[1, -1  ] = 1
         return A_banded
+
     
+    def construct_A_banded_format_variable_dx(
+            self,
+            dxs: np.ndarray,
+            dt: float
+        ) -> np.ndarray:
+        '''
+        Constructs the banded matrix A for modelling diffusion via the Crank-
+        Nicholson formulation, using variable spatial grid spacing. Both left 
+        and right boundary conditions are set to Dirchlet.
+
+        :param dxs: A numpy array corresponding to the spatial grid spacings in
+            cm
+        :param dt: The time spacing in seconds
+        '''
+        # Firstly note that if there are n dxs then there are n+1 spatial points
+        A_banded = np.zeros((3, self.npoints))
+        assert len(dxs) == self.npoints - 1, "Number of spatial separations" \
+                                             "does not match number of" \
+                                             "concentration points"
+        # Go through each point and calculate the relevant K and matrix values
+        i = 1
+        for dx_j1, dx_j in zip(dxs[0:-1], dxs[1:]):
+            K = self.calculate_K_variable_dx(dt, dx_j, dx_j1)
+            A_banded[0, i+1] = -K * dx_j1
+            A_banded[1,i] = 1 + K * (dx_j + dx_j1)
+            A_banded[2,i-1] = -K * dx_j
+            i += 1
+
+        # Assign the boundary condition values
+        A_banded[1,0]   = 1
+        A_banded[1,-1]  = 1
+
+        return A_banded
+
 
     def construct_B(
             self,
@@ -131,6 +185,37 @@ class Solute:
         return B
     
 
+    def construct_B_variable_dx(
+            self,
+            dxs: np.ndarray,
+            dt: float
+        ) -> np.ndarray:
+        '''
+        Constructs the banded matrix B for modelling diffusion via the Crank-
+        Nicholson formulation, using variable spatial grid spacing. Both left 
+        and right boundary conditions are set to Dirchlet.
+
+        :param dxs: A numpy array corresponding to the spatial grid spacings in
+            cm
+        :param dt: The time spacing in seconds
+        '''
+        B = np.zeros((self.npoints, self.npoints))
+
+        # Go through each point and calculate the relevant K and matrix values
+        i = 1
+        for dx_j1, dx_j in zip(dxs[0:-1], dxs[1:]):
+            K = self.calculate_K_variable_dx(dt, dx_j, dx_j1)
+            B[i, i+1] = K * dx_j1
+            B[i, i  ] = 1 - K * (dx_j + dx_j1)
+            B[i, i-1] = K * dx_j
+            i += 1
+
+        # Set the boundary conditions
+        B[0,0], B[-1,-1] = 1, 1
+
+        return B
+    
+
     def save_diffusion_matrices(
             self,
             dx: float,
@@ -145,6 +230,25 @@ class Solute:
         '''
         self.A_banded = self.construct_A_banded_format(dx, dt)
         self.B        = self.construct_B(dx, dt)
+
+
+    def save_diffusion_matrices_variable_dxs(
+            self,
+            dxs: np.ndarray,
+            dt: float
+        ) -> None:
+        '''
+        Construct and save the reusable matrices relevant for modelling
+        diffusion of the solute via the Crank-Nicholson technique.
+
+        :param dxs: The spatial step sizes in cm
+        :param dt: The time step in seconds
+        '''
+        self.A_banded = self.construct_A_banded_format_variable_dx(dxs, dt)
+        self.B        = self.construct_B_variable_dx(dxs, dt)
+        '''print('A_banded\n', self.A_banded)
+        print('\n\n')
+        print(self.B)'''
 
     
     def diffuse(
