@@ -370,10 +370,11 @@ class SolutionCVMethods:
                                np.arange(E_max,   E_start + dE, -dE).tolist()
         # Run the cycles
         n_points = len(cycle_potentials) * n_cycles
+        max_counter = np.ceil(n_points // target_n_points)
         with Progress() as progress:
             task = progress.add_task("[cyan]Running Cyclic Voltammetry...",
                                      total=n_points)
-            i = 0
+            counter = 0
             for cycle in range(n_cycles):
                 for E in cycle_potentials:
                     # Set the electrode potential
@@ -386,9 +387,8 @@ class SolutionCVMethods:
                     # Calculate current using the fluxes
                     current = self.current_from_flux()
                     # Append the potential and current to the lists if time to
-                    if i == 0: potentials.append(E); currents.append(current)
-                    if i == target_n_points - 1: i == 0
-                    else: i += 1
+                    if int(counter % target_n_points) == 0:
+                        potentials.append(E); currents.append(current)
 
                     # If saving concentrations, append the concentrations
                     if save_concs:
