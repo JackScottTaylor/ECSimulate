@@ -108,7 +108,7 @@ class Solution(
             self.redox_connectivity_matrix()
         )
         # Precompute scaling factor for current from flux using first spacing.
-        self.FAdx = - FARADAY_CONSTANT * A / (dxs[0] * 1e-2)
+        self.FAdx = - FARADAY_CONSTANT * A / (dxs[1] * 1e-2)
 
     
     def redox_connectivity_matrix(self) -> np.ndarray:
