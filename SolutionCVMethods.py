@@ -329,6 +329,7 @@ class SolutionCVMethods:
             T: float = 298.15,
             start_positive_direction: bool = True,
             save_concs: bool = False,
+            target_n_points = 1000
         ) -> List[np.ndarray]:
         '''
         Models a cyclic voltammetry experiment and returns the voltage and the
@@ -372,6 +373,7 @@ class SolutionCVMethods:
         with Progress() as progress:
             task = progress.add_task("[cyan]Running Cyclic Voltammetry...",
                                      total=n_points)
+            i = 0
             for cycle in range(n_cycles):
                 for E in cycle_potentials:
                     # Set the electrode potential
@@ -383,8 +385,10 @@ class SolutionCVMethods:
                     self.diffuse_coupled_kinetics()
                     # Calculate current using the fluxes
                     current = self.current_from_flux()
-                    # Append the potential and current to the lists
-                    potentials.append(E); currents.append(current)
+                    # Append the potential and current to the lists if time to
+                    if i == 0: potentials.append(E); currents.append(current)
+                    if i == target_n_points - 1: i == 0
+                    else: i += 1
 
                     # If saving concentrations, append the concentrations
                     if save_concs:
