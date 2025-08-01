@@ -389,6 +389,7 @@ class SolutionCVMethods:
                     # Append the potential and current to the lists if time to
                     if int(counter % target_n_points) == 0:
                         potentials.append(E); currents.append(current)
+                    counter += 1
 
                     # If saving concentrations, append the concentrations
                     if save_concs:
