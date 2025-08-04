@@ -350,9 +350,6 @@ class SolutionCVMethods:
             and the values being an array of the concentrations at different
             times.
         '''
-        # Initialise the voltages and currents arrays
-        potentials  = []
-        currents    = []
         # If saving concentrations, initialise the concentrations list
         if save_concs: concentrations = {s.name: [] for s in self.solutes}
         # Calculate what the step size is in V
@@ -370,11 +367,13 @@ class SolutionCVMethods:
                                np.arange(E_max,   E_start + dE, -dE).tolist()
         # Run the cycles
         n_points = len(cycle_potentials) * n_cycles
-        max_counter = np.ceil(n_points // target_n_points)
+        # Initialise the voltages and currents arrays
+        potentials  = np.zeros(n_points)
+        currents    = np.zeros(n_points)
         with Progress() as progress:
             task = progress.add_task("[cyan]Running Cyclic Voltammetry...",
                                      total=n_points)
-            counter = 0
+            index = 0
             for cycle in range(n_cycles):
                 for E in cycle_potentials:
                     # Set the electrode potential
@@ -386,10 +385,9 @@ class SolutionCVMethods:
                     self.diffuse_coupled_kinetics()
                     # Calculate current using the fluxes
                     current = self.current_from_flux()
-                    # Append the potential and current to the lists if time to
-                    if int(counter % target_n_points) == 0:
-                        potentials.append(E); currents.append(current)
-                    counter += 1
+                    # Append the potential and current to the lists
+                    potentials[index] = E; currents[index] = current
+                    index += 1
 
                     # If saving concentrations, append the concentrations
                     if save_concs:
@@ -404,8 +402,8 @@ class SolutionCVMethods:
         if save_concs:
             for s in self.solutes:
                 concentrations[s.name] = np.array(concentrations[s.name])
-            return np.array(potentials), np.array(currents), concentrations
-        return np.array(potentials), np.array(currents)
+            return potentials, currents, concentrations
+        return potentials, currents
     
 
     def cyclic_voltammetry_kinetics_coupled_flux_current_grad_logging(
