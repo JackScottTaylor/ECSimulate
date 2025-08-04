@@ -337,6 +337,20 @@ class Solution(
             gradient[0], gradient[-1] = 0, 0
             solute.diffuse_coupled_kinetics(gradient)
 
+
+    def diffuse_coupled_kinetics_Thomas(self) -> None:
+        '''
+        This causes all of the solutes to both chemically react and diffuse at
+        the same time. The changes due to chemical reactions are calculated and
+        used to create reaction matrices for each solute. Diffusion occurs via
+        Thomas algorithm.
+        '''
+        gradients = self.reaction_concentration_time_gradients()
+        gradients = [g * self.dt for g in gradients]
+        for solute, gradient in zip(self.solutes, gradients):
+            gradient[0], gradient[-1] = 0, 0
+            solute.diffuse_coupled_kinetics_Thomas(gradient)
+
     
     def diffusion_Strang(self) -> None:
         '''

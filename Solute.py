@@ -4,6 +4,7 @@ from typing import Annotated
 from numpy.typing import NDArray
 
 from ._SoluteNumbaFunctions import second_space_derivative_numba
+from .ThomasAlgorithm import thomas_solve, compute_gamma_primes
 
 class Solute:
     '''
@@ -229,6 +230,15 @@ class Solute:
         :param dt: The time step in seconds
         '''
         self.A_banded = self.construct_A_banded_format(dx, dt)
+
+        self.alphas = self.A_banded[2, 0:-1]
+        self.betas  = self.A_banded[1, :]
+
+        gammas = self.A_banded[0, 1:]
+        self.g_primes = compute_gamma_primes(
+            self.alphas, self.betas, gammas, self.npoints
+            )
+
         self.B        = self.construct_B(dx, dt)
 
 
@@ -245,10 +255,17 @@ class Solute:
         :param dt: The time step in seconds
         '''
         self.A_banded = self.construct_A_banded_format_variable_dx(dxs, dt)
+
+        self.alphas = self.A_banded[2, 0:-1]
+        self.betas  = self.A_banded[1, :]
+
+        gammas = self.A_banded[0, 1:]
+        self.g_primes = compute_gamma_primes(
+            self.alphas, self.betas, gammas, self.npoints
+            )
+
         self.B        = self.construct_B_variable_dx(dxs, dt)
-        '''print('A_banded\n', self.A_banded)
-        print('\n\n')
-        print(self.B)'''
+        
 
     
     def diffuse(
@@ -294,6 +311,30 @@ class Solute:
             )
         # Set the ghost point concentration to the first point
         self.conc[0] = self.conc[1]
+
+    
+    def diffuse_coupled_kinetics_Thomas(
+            self,
+            R: np.ndarray
+    ) -> None:
+        '''
+        Updates the concentration of the solute in the solution by using the
+        Crank-Nicholson approach. In this case changes due to reaction kinetics
+        are also included and all changes treated together. The non-diffusion
+        changes are passed in the 1D numpy array R. R is then made into a 
+        diagonal matrix such that the concentration is updated by solving the 
+        matrix equation A * conc_new = (B + R) * conc_old.
+        
+        :param R: 1D numpy array detailing the non-diffusion changes to
+            concentration for the solute over the correct time-step.
+        '''
+        d = self.B @ self.conc + R
+        # Solve the system using the Thomas algorithm
+        self.conc = thomas_solve(
+            self.alphas, self.betas, self.g_primes, d, self.npoints
+        )
+        
+
     
     def second_space_derivative(
             self,
