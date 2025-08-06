@@ -333,6 +333,8 @@ class Solute:
         self.conc = thomas_solve(
             self.alphas, self.betas, self.g_primes, d, self.npoints
         )
+        # Set the ghost point concentration to the first point
+        self.conc[0] = self.conc[1]
         
 
     
