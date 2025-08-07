@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 def reaction_rates_func(
         t: float,
         solute_concs: np.ndarray,
-        reactions: List[Reaction],
-        solute_to_index: Dict[Solute, int]
+        reactions: List["Reaction"],
+        solute_to_index: Dict["Solute", int]
     ) -> np.ndarray:
     '''
     This function calculate the rate of change of concentration for different
@@ -49,8 +49,8 @@ def integrate_point_kinetics(
         point: int,
         dt: float,
         solute_concs_at_point: np.ndarray,
-        reactions: List[Reaction],
-        solute_to_index: Dict[Solute, int]
+        reactions: List["Reaction"],
+        solute_to_index: Dict["Solute", int]
     ) -> np.ndarray:
     '''
     Uses scipy `solve_ivp` integrator to update the concentrations of all the 
