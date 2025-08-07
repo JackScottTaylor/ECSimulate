@@ -70,6 +70,8 @@ def integrate_point_kinetics(
         t_span=(0, dt),
         y0=solute_concs_at_point,
         method='BDF',
+        rtol=1e-3,
+        atol=1e-6
     )
 
     if not sol.success:

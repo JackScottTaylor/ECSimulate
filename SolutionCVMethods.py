@@ -458,8 +458,8 @@ class SolutionCVMethods:
         currents    = np.zeros(n_points)
 
         if strang:
-            self.save_solute_to_index()
-            conc_updater = self.diffusion_Strang_integrator
+            self.precompute_back_eulers()
+            conc_updater = self.diffusion_Strang_BackEuler
         else:
             conc_updater = self.diffuse_coupled_kinetics_Thomas
 

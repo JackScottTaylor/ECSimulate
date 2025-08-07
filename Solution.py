@@ -5,6 +5,7 @@ from .constants import FARADAY_CONSTANT
 
 from .SolutionCVMethods import SolutionCVMethods
 from .SolutionChemicalKineticsMethods import MixinSolutionReactionKinetics
+from .SolutionBackwardsEuler import SolutionBackEulerMixin
 
 from typing               import List
 from scipy.sparse.csgraph import connected_components
@@ -16,7 +17,8 @@ import numpy as np
 
 class Solution(
     SolutionCVMethods,
-    MixinSolutionReactionKinetics
+    MixinSolutionReactionKinetics,
+    SolutionBackEulerMixin
     ):
     '''
     Class which holds all information pertaining to a 1D electrochemical
@@ -378,6 +380,12 @@ class Solution(
         self.integrate_chemical_kinetics(self.dt/2)
         self.diffuse_Thomas()
         self.integrate_chemical_kinetics(self.dt/2)
+
+
+    def diffusion_Strang_BackEuler(self) -> None:
+        self.back_Euler_update(self.dt/2)
+        self.diffuse_Thomas()
+        self.back_Euler_update(self.dt/2)
         
     
     def current_from_flux(
