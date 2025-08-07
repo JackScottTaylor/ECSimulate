@@ -414,7 +414,8 @@ class SolutionCVMethods:
             n_cycles: int = 1,
             T: float = 298.15,
             start_positive_direction: bool = True,
-            rich_progress_bar: bool = True
+            rich_progress_bar: bool = True,
+            strang: bool = False
         ) -> List[np.ndarray]:
         '''
         Models a cyclic voltammetry experiment and returns the voltage and the
@@ -456,14 +457,19 @@ class SolutionCVMethods:
         n_points    = len(potentials)
         currents    = np.zeros(n_points)
 
-        # Create function to update the cyclic voltammogram
+        if strang:
+            self.save_solute_to_index()
+            conc_updater = self.diffusion_Strang_integrator
+        else:
+            conc_updater = self.diffuse_coupled_kinetics_Thomas
+
         def update(E, index):
             # Set the electrode potential
             self.electrode_potential = E
             # Allow Nernstian equilibrium to occur at electrode surface
             self.Nernstian_equilibrium()
             # Have diffusion and chemical reactions occur at same time.
-            self.diffuse_coupled_kinetics_Thomas()
+            conc_updater()
             # Calculate current using the fluxes
             current = self.current_from_flux()
             # Append the potential and current to the lists
@@ -485,8 +491,6 @@ class SolutionCVMethods:
                 update(E, index)
 
         return potentials, currents
-
-
 
     
 

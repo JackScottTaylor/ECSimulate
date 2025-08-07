@@ -335,6 +335,19 @@ class Solute:
         )
         # Set the ghost point concentration to the first point
         self.conc[0] = self.conc[1]
+
+
+    def diffuse_Thomas(self) -> None:
+        '''
+        Uses Thomas algorithm to model diffusion, without includeing reactions
+        '''
+        d = self.B @ self.conc
+        # Solve the system using the Thomas algorithm
+        self.conc = thomas_solve(
+            self.alphas, self.betas, self.g_primes, d, self.npoints
+        )
+        # Set the ghost point concentration to the first point
+        self.conc[0] = self.conc[1]
         
 
     

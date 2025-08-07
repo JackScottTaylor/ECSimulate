@@ -4,6 +4,7 @@ from .Reaction  import Reaction
 from .constants import FARADAY_CONSTANT
 
 from .SolutionCVMethods import SolutionCVMethods
+from .SolutionChemicalKineticsMethods import MixinSolutionReactionKinetics
 
 from typing               import List
 from scipy.sparse.csgraph import connected_components
@@ -14,7 +15,8 @@ from rich.progress        import Progress
 import numpy as np
 
 class Solution(
-    SolutionCVMethods
+    SolutionCVMethods,
+    MixinSolutionReactionKinetics
     ):
     '''
     Class which holds all information pertaining to a 1D electrochemical
@@ -351,6 +353,10 @@ class Solution(
             gradient[0], gradient[-1] = 0, 0
             solute.diffuse_coupled_kinetics_Thomas(gradient)
 
+
+    def diffuse_Thomas(self) -> None:
+        for solute in self.solutes: solute.diffuse_Thomas()
+
     
     def diffusion_Strang(self) -> None:
         '''
@@ -362,6 +368,17 @@ class Solution(
         self.diffuse()
         self.run_chemical_reactions(time_split=2)
 
+    
+    def diffusion_Strang_integrator(self) -> None:
+        '''
+        This method allows chemical kinetics and diffusion to occur via
+        Strang splitting. Reaction first happenn over dt/2 then diffusion
+        over dt, then reaction again over dt/2.
+        '''
+        self.integrate_chemical_kinetics(self.dt/2)
+        self.diffuse_Thomas()
+        self.integrate_chemical_kinetics(self.dt/2)
+        
     
     def current_from_flux(
             self
