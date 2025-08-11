@@ -12,6 +12,7 @@ from scipy.sparse.csgraph import connected_components
 from scipy.sparse         import csr_matrix
 from collections          import deque
 from rich.progress        import Progress
+from concurrent.futures   import ThreadPoolExecutor
 
 import numpy as np
 
@@ -342,7 +343,27 @@ class Solution(
             solute.diffuse_coupled_kinetics(gradient)
 
 
+    def _coupled_kinetics_Thomas_update_solute(self, solute, gradient, dt):
+        gradient = gradient * dt
+        gradient[0], gradient[-1] = 0, 0
+        solute.diffuse_coupled_kinetics_Thomas(gradient)
+
     def diffuse_coupled_kinetics_Thomas(self) -> None:
+        """
+        Thread-parallelised version: one thread per solute.
+        This avoids pickling and takes advantage of Numba releasing the GIL.
+        """
+        gradients = self.reaction_concentration_time_gradients()
+
+        with ThreadPoolExecutor() as executor:
+            executor.map(
+                self._coupled_kinetics_Thomas_update_solute,
+                self.solutes,
+                gradients,
+                [self.dt] * len(self.solutes)
+        )
+
+    """def diffuse_coupled_kinetics_Thomas(self) -> None:
         '''
         This causes all of the solutes to both chemically react and diffuse at
         the same time. The changes due to chemical reactions are calculated and
@@ -353,7 +374,7 @@ class Solution(
         gradients = [g * self.dt for g in gradients]
         for solute, gradient in zip(self.solutes, gradients):
             gradient[0], gradient[-1] = 0, 0
-            solute.diffuse_coupled_kinetics_Thomas(gradient)
+            solute.diffuse_coupled_kinetics_Thomas(gradient)"""
 
 
     def diffuse_Thomas(self) -> None:

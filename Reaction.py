@@ -1,4 +1,5 @@
 from .Solute import Solute
+from .ReactionLookUp import ReactionLookUp
 
 from typing import List
 
@@ -45,6 +46,19 @@ class Reaction:
         for reactant in self.reactants:
             rate *= reactant.conc
         return rate
+    
+
+    def rate_from_lookup(self, n):
+        rate = np.ones(n)
+        for i in range(n):
+            rate[i] = self.lookup.interpolate_rate(
+                [r.conc[i] for r in self.reactants])
+        return rate
+
+
+    def create_lookup_table(self, *max_concs, nbins=1024):
+        self.lookup = ReactionLookUp(
+            self.rate_constant, *max_concs, nbins=nbins)
 
             
             
