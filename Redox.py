@@ -30,6 +30,7 @@ class Redox:
         self.name             = name
         self.E0               = E0
         self.n                = n
+        self.nF_R             = n * F / R
 
 
     def electrode_potential(
@@ -67,7 +68,7 @@ class Redox:
         :param T: The temperature in K
         :return: The concentration constant
         '''
-        K = np.exp(((self.n * F) / (R * T))*(self.E0 - electrode_potential))
+        K = np.exp((self.nF_R / T) * (self.E0 - electrode_potential))
         return K
 
 

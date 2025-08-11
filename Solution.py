@@ -12,6 +12,7 @@ from scipy.sparse.csgraph import connected_components
 from scipy.sparse         import csr_matrix
 from collections          import deque
 from rich.progress        import Progress
+from concurrent.futures   import ProcessPoolExecutor
 
 import numpy as np
 
@@ -42,45 +43,8 @@ class Solution(
     def add_reactions(self, *reactions: Reaction) -> None:
         for reaction in reactions: self.reactions.append(reaction)
 
-    
+
     def initialise(
-            self,
-            width: float,
-            dx:    float,
-            dt:    float,
-            A:     float = np.pi * 1.5 ** 2
-        ) -> None:
-        '''
-        Sets up parameters for the simulation including the width of the 
-        simulation in cm and the spacing of the grid in cm.
-        Each solute in the solution is set to their bulk concentrations
-
-        :param width: The width of the simulation in cm
-        :param dx: The spacing of the grid in cm
-        :param dt: The time-step spacing which will be considered in seconds
-        :param A: The area of the electrode in mm², the default is a circular
-            electrode with radius 1.5 mm (A = π * 1.5²)
-        '''
-        self.dx = dx
-        self.dt = dt
-        self.A  = A * 1e-6  # Convert mm² to m²
-        # Choose number of grid points to get close to desired width as possible
-        npoints = int(width / dx)
-        # For each solute, set up the concentrations and diffusion matrices
-        for solute in self.solutes:
-            solute.initialise_concentration(npoints)
-            solute.save_diffusion_matrices(dx, dt)
-        # Save number of grid points
-        self.npoints = npoints
-        # Save the redox connectiveness
-        self.redox_connectivity = self.extract_connected_groups(
-            self.redox_connectivity_matrix()
-        )
-        # Precompute scaling factor for current from flux
-        self.FAdx = - FARADAY_CONSTANT * A / (dx * 1e-2)
-
-
-    def initialise_variable_dxs(
             self,
             dxs:   np.ndarray,
             dt:    float,
@@ -113,6 +77,10 @@ class Solution(
         )
         # Precompute scaling factor for current from flux using first spacing.
         self.FAdx = - FARADAY_CONSTANT * A / (dxs[1] * 1e-2)
+
+        self.solute_to_index = {s: i for i, s in enumerate(self.solutes)}
+        self.n_solutes = len(self.solutes)
+
 
     
     def redox_connectivity_matrix(self) -> np.ndarray:
@@ -160,13 +128,6 @@ class Solution(
             groups[label].append(idx)
         
         return groups
-    
-
-    def diffuse(self) -> None:
-        '''
-        Diffuses all species in solution to diffuse over one time step
-        '''
-        for solute in self.solutes: solute.diffuse()
 
     
     def redox_conc_scaling_matrix(self) -> np.ndarray:
@@ -269,38 +230,6 @@ class Solution(
             for i in group:
                 self.solutes[i].conc[0] *= global_conc_scaling
 
-    
-    def total_solute_charge_at_electrode(self) -> float:
-        '''
-        Calculates the total charge in e at the electrode due to the solutes.
-        
-        :return: The total charge in e at the electrode
-        '''
-        total_charge = 0.0
-        for solute in self.solutes:
-            total_charge += solute.conc[0] * solute.charge
-        return total_charge
-    
-
-    def run_chemical_reactions(self, time_split: int = 1) -> None:
-        '''
-        Runs all of the chemical reactions by iterating through the reactions, 
-        calculating the rates of the reaction at every point in the simultaion
-        and then updating the concentrations of the reactants and products.
-
-        :param time_split: The number of time steps to split the reaction into
-            to ensure stability of the simulation. Default is 1.
-        '''
-        for i in range(time_split):
-            # Calculate the gradients
-            solute_conc_gradients = self.reaction_concentration_time_gradients()
-            # Now update the concentrations of the solutes
-            for solute, gradient in zip(self.solutes, solute_conc_gradients):
-                # Update the concentration at each point in the simulation
-                solute.conc += gradient * self.dt / time_split
-                # Ensure that concentrations do not go negative
-                solute.conc = np.clip(solute.conc, 0, None)
-
 
     def reaction_concentration_time_gradients(self) -> List[np.ndarray]:
         '''
@@ -310,22 +239,29 @@ class Solution(
         :return: List of the instantaneous concentration time derivatives
             determined from the reaction kinetics.
         '''
-        solute_to_index = {s: i for i, s in enumerate(self.solutes)}
-        n = len(self.solutes[0].conc)
-        solute_conc_gradients = [np.zeros(n) for _ in self.solutes]
+        solute_conc_gradients = [
+            np.zeros(self.npoints, dtype=float) for _ in range(self.n_solutes)
+            ]
         # Iterate through each reaction and update the conc gradients
         for reaction in self.reactions:
             rate = reaction.rate(self.npoints)
             # For each reactant, subtract the rate from the gradient
             for reactant in reaction.reactants:
-                index = solute_to_index[reactant]
+                index = self.solute_to_index[reactant]
                 solute_conc_gradients[index] -= rate
             # For each product, add the rate to the gradient
             for product in reaction.products:
-                index = solute_to_index[product]
+                index = self.solute_to_index[product]
                 solute_conc_gradients[index] += rate
         # Return the gradients
         return solute_conc_gradients
+    
+
+    def diffuse(self) -> None:
+        '''
+        Diffuses all species in solution to diffuse over one time step
+        '''
+        for solute in self.solutes: solute.diffuse()
     
 
     def diffuse_coupled_kinetics(self) -> None:
@@ -339,36 +275,7 @@ class Solution(
         gradients = [g * self.dt for g in gradients]
         for solute, gradient in zip(self.solutes, gradients):
             gradient[0], gradient[-1] = 0, 0
-            solute.diffuse_coupled_kinetics(gradient)
-
-
-    def diffuse_coupled_kinetics_Thomas(self) -> None:
-        '''
-        This causes all of the solutes to both chemically react and diffuse at
-        the same time. The changes due to chemical reactions are calculated and
-        used to create reaction matrices for each solute. Diffusion occurs via
-        Thomas algorithm.
-        '''
-        gradients = self.reaction_concentration_time_gradients()
-        gradients = [g * self.dt for g in gradients]
-        for solute, gradient in zip(self.solutes, gradients):
-            gradient[0], gradient[-1] = 0, 0
-            solute.diffuse_coupled_kinetics_Thomas(gradient)
-
-
-    def diffuse_Thomas(self) -> None:
-        for solute in self.solutes: solute.diffuse_Thomas()
-
-    
-    def diffusion_Strang(self) -> None:
-        '''
-        This method allows chemical kinetics and diffusion to occur via
-        Strang splitting. Reaction first happenn over dt/2 then diffusion
-        over dt, then reaction again over dt/2.
-        '''
-        self.run_chemical_reactions(time_split=2)
-        self.diffuse()
-        self.run_chemical_reactions(time_split=2)
+            solute.diffuse(gradient)
 
     
     def diffusion_Strang_integrator(self) -> None:
@@ -378,7 +285,7 @@ class Solution(
         over dt, then reaction again over dt/2.
         '''
         self.integrate_chemical_kinetics(self.dt/2)
-        self.diffuse_Thomas()
+        self.diffuse()
         self.integrate_chemical_kinetics(self.dt/2)
 
 

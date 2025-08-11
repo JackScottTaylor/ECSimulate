@@ -1,10 +1,11 @@
 import numpy as np
+
 from scipy.linalg import solve_banded
+from scipy.sparse import diags
 from typing import Annotated
 from numpy.typing import NDArray
 
-from ._SoluteNumbaFunctions import second_space_derivative_numba
-from .ThomasAlgorithm import thomas_solve, compute_gamma_primes
+from .ThomasAlgorithm       import thomas_solve, compute_gamma_primes
 
 class Solute:
     '''
@@ -34,7 +35,7 @@ class Solute:
         ) -> None:
         '''
         Sets up the concentrations of the solute in the solution by creating an 
-        array of length npoints, setting everywhere to the bulk concentration.
+        array of length `npoints`, setting everywhere to the bulk concentration.
 
         :param npoints: The number of points in the concentration array
         '''
@@ -217,6 +218,22 @@ class Solute:
         return B
     
 
+    def B_sparse(self) -> np.ndarray:
+        '''
+        Takes the tridiagonal matrix self.B and saves it in a sparse format for
+        fast and efficient matrix multiplication.
+        '''
+        n = self.B.shape[0]
+        diagonals = [
+            np.diag(self.B, k=-1),
+            np.diag(self.B, k=0),
+            np.diag(self.B, k=1)
+        ]
+        offsets = [-1, 0, 1]
+        sparse_B = diags(diagonals, offsets, shape=(n, n), format='csr')
+        return sparse_B
+    
+
     def save_diffusion_matrices(
             self,
             dx: float,
@@ -240,6 +257,7 @@ class Solute:
             )
 
         self.B        = self.construct_B(dx, dt)
+        self.sparse_B = self.B_sparse()
 
 
     def save_diffusion_matrices_variable_dxs(
@@ -265,58 +283,13 @@ class Solute:
             )
 
         self.B        = self.construct_B_variable_dx(dxs, dt)
-        
+        self.sparse_B = self.B_sparse()
 
     
     def diffuse(
-            self
-        ) -> None:
-        '''
-        Updates the concentration of the solute in the solution by allowing
-        diffusion to occur over one time step using the Crank-Nicholson method.
-        This method relies on the matrices A_banded and B being pre-computed
-        and stored in the solute object.
-        The time step and spatial step are set in the calculated matrices.
-
-        Effectively solves the equation A * conc_new = B * conc_old to obtain
-        the new concentrations.
-        '''
-        self.conc = solve_banded(
-            (1,1),
-            self.A_banded,
-            self.B @ self.conc
-            )
-        # Set the ghost point concentration to the first point
-        self.conc[0] = self.conc[1]
-        
-    def diffuse_coupled_kinetics(
             self,
-            R: np.ndarray
+            R: np.ndarray = 0
         ) -> None:
-        '''
-        Updates the concentration of the solute in the solution by using the
-        Crank-Nicholson approach. In this case changes due to reaction kinetics
-        are also included and all changes treated together. The non-diffusion
-        changes are passed in the 1D numpy array R. R is then made into a 
-        diagonal matrix such that the concentration is updated by solving the 
-        matrix equation A * conc_new = (B + R) * conc_old.
-
-        :param R: 1D numpy array detailing the non-diffusion changes to
-            concentration for the solute over the correct time-step.
-        '''
-        self.conc = solve_banded(
-            (1,1),
-            self.A_banded,
-            self.B @ self.conc + R
-            )
-        # Set the ghost point concentration to the first point
-        self.conc[0] = self.conc[1]
-
-    
-    def diffuse_coupled_kinetics_Thomas(
-            self,
-            R: np.ndarray
-    ) -> None:
         '''
         Updates the concentration of the solute in the solution by using the
         Crank-Nicholson approach. In this case changes due to reaction kinetics
@@ -328,7 +301,7 @@ class Solute:
         :param R: 1D numpy array detailing the non-diffusion changes to
             concentration for the solute over the correct time-step.
         '''
-        d = self.B @ self.conc + R
+        d = self.sparse_B @ self.conc + R
         # Solve the system using the Thomas algorithm
         self.conc = thomas_solve(
             self.alphas, self.betas, self.g_primes, d, self.npoints
@@ -336,52 +309,6 @@ class Solute:
         # Set the ghost point concentration to the first point
         self.conc[0] = self.conc[1]
 
-
-    def diffuse_Thomas(self) -> None:
-        '''
-        Uses Thomas algorithm to model diffusion, without includeing reactions
-        '''
-        d = self.B @ self.conc
-        # Solve the system using the Thomas algorithm
-        self.conc = thomas_solve(
-            self.alphas, self.betas, self.g_primes, d, self.npoints
-        )
-        # Set the ghost point concentration to the first point
-        self.conc[0] = self.conc[1]
-        
-
-    
-    def second_space_derivative(
-            self,
-            dx: float
-        ) -> np.ndarray:
-        '''
-        This uses finite differences technique to compute the second spatial 
-        derivative. 
-
-        :param dx: The spatial grid spacing in cm
-        '''
-        return second_space_derivative_numba(
-            self.conc,
-            dx
-        )
-    
-    def diffusion_conc_gradient(
-            self,
-            dx: float
-        ) -> np.ndarray:
-        '''
-        Returns the second space derivative multiplied by the diffusion
-        coefficient.
-
-        This has horrific units so will convert to SI.
-        Currently, mol/dm³ is used for concentration, so we need to convert
-        to mol/cm³, so it will vibe with the diffusion coefficient and spatial
-        grid spacing.
-
-        :param dx: Th spatial grid spacing in cm
-        '''
-        return self.D * self.second_space_derivative(dx) * 1e-3
     
     def current_contribution(
             self

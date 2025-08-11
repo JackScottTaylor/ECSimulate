@@ -41,7 +41,7 @@ class Reaction:
 
         :return: The rate of the reaction in mol dm⁻³ s⁻¹
         '''
-        rate = self.rate_constant * np.ones(n)
+        rate = np.full(n, self.rate_constant, dtype=float)
         for reactant in self.reactants:
             rate *= reactant.conc
         return rate
