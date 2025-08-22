@@ -62,6 +62,8 @@ class SolutionCVMethods:
         n_points    = len(potentials)
         currents    = np.zeros(n_points)
 
+        print(f"Cyclic Voltammetry Simulation")
+        print(n_points)
 
         nernst_eq = self.Nernstian_equilibrium
         flux_to_current = self.current_from_flux
