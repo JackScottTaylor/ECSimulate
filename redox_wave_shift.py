@@ -57,7 +57,9 @@ def n_logK_analysis_exact(
     CO2_concs: np.ndarray,
     reduction_peaks: np.ndarray,
     max_CO2_conc = 0.139,
-    plot: bool = False
+    plot: bool = False,
+    ax = None,
+    label: str = ''
     ) -> tuple:
     '''
     Takes an array of CO2 concentration in % of maximum and an array of the
@@ -89,12 +91,15 @@ def n_logK_analysis_exact(
     x = np.log(CO2_concs)
     result = linregress(x, y)
 
-    if plot: plt.scatter(x, y)
+    if plot:
+        if ax == None: ax = plt.gca()
+        ax.scatter(x, y, label=label)
 
     n, intercept, r_value = result[:3]
     n_err, intercept_err = result.stderr, result.intercept_stderr
 
-    if plot: plt.plot(x, n * x + intercept, linestyle='--')
+    if plot:
+        ax.plot(x, n * x + intercept, linestyle='--')
 
     # Calculate log10(K) from intercept
     logK = intercept / ln10
