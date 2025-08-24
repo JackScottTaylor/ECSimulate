@@ -11,6 +11,13 @@ from scipy.sparse         import csr_matrix
 from collections          import deque
 import numpy as np
 
+from scipy.linalg import lu_factor, lu_solve
+from scipy.linalg.lapack import dgbtrf, dgbtrs
+
+import time as time
+
+from numba import njit
+
 def chess_board_combine(*arrays):
     s = arrays[0].shape
     for A in arrays:
@@ -26,6 +33,30 @@ def chess_board_combine(*arrays):
             combo_index = tuple(i * n_arrays + array_idx for i in index)
             C[combo_index] = val
     return C
+
+
+def banded_to_full(ab, nsolutes):
+    """
+    Convert a banded matrix (as used by solve_banded) to a full square matrix.
+
+    ab : array_like, shape (kl + ku + 1, n)
+    kl : int, number of subdiagonals
+    ku : int, number of superdiagonals
+    """
+    kl, ku = nsolutes, nsolutes
+    n = ab.shape[1]
+    full = np.zeros((n, n), dtype=ab.dtype)
+    
+    for j in range(n):
+        # superdiagonals
+        for i in range(max(0, j-ku), j):
+            full[i, j] = ab[ku + i - j, j]
+        # main diagonal
+        full[j, j] = ab[ku, j]
+        # subdiagonals
+        for i in range(j+1, min(n, j+kl+1)):
+            full[i, j] = ab[ku + i - j, j]
+    return full
 
 
 class CVSimulator:
@@ -60,12 +91,17 @@ class CVSimulator:
         self.add_reactions_contributions_to_A()
         self.add_reactions_contributions_to_B()
 
+        self.construct_sparse_B()
+
         self.FAdx = - FARADAY_CONSTANT * A / (dxs[1] * 1e-2)
         self.electrode_potential = 0.0
 
         self.redox_connectivity = self.extract_connected_groups(
             self.redox_connectivity_matrix()
         )
+
+        self.charges = np.array([s.charge for s in self.solutes])
+        self.Ds = np.array([s.D for s in self.solutes])
 
     def matrix_coords_to_banded(self, i, j):
         return self.nsolutes + i - j, j
@@ -134,13 +170,16 @@ class CVSimulator:
                 self.A_banded[
                     i,j
                 ] -= val
+
+    def construct_sparse_B(self):
+        self.B_csr = csr_matrix(self.B)
         
 
-
     def update(self):
-        self.C = solve_banded(self.l_and_u, self.A_banded, self.B @ self.C)
-
-
+        self.C = solve_banded(
+            self.l_and_u, self.A_banded, self.B_csr.dot(self.C)
+            )
+        
 
     def redox_connectivity_matrix(self) -> np.ndarray:
         '''
@@ -184,6 +223,7 @@ class CVSimulator:
         groups = [[] for _ in range(n_components)]
         for idx, label in enumerate(labels):
             groups[label].append(idx)
+        groups = [np.array(group) for group in groups]
         
         return groups
 
@@ -194,8 +234,7 @@ class CVSimulator:
         required to achieve Nernstian equilibrium.
         '''
         M = np.eye(self.nsolutes)
-        n_solutes = self.nsolutes
-        ids = {self.solutes[i]: i for i in range(n_solutes)}
+        ids = self.ids
         for r in self.redoxes:
             red, ox = ids[r.reduced_species], ids[r.oxidised_species]
             K = r.equilibrium_constant(self.electrode_potential)
@@ -256,7 +295,7 @@ class CVSimulator:
         if any(c is None for c in rel_conc):
             raise ValueError("Incomplete connection in redox scaling group.")
 
-        return rel_conc
+        return np.array(rel_conc)
     
 
     def Nernstian_equilibrium(self) -> None:
@@ -271,27 +310,23 @@ class CVSimulator:
             # Get the relatice concentrations for the group
             rel_conc = self.group_to_conc_scalings(group, scaling_matrix)
             # Calculate the total concentration of the group
-            total_conc = sum(self.C[i] for i in group)
+            total_conc = np.sum(self.C[group])
             # Reference concentration is the first solute in the group
             ref_conc = self.C[group[0]]
             # Set the concentrations of the solutes in the group
-            for i, solute in enumerate(group):
-                self.C[solute] = ref_conc * rel_conc[i]
+            self.C[group] = ref_conc * rel_conc
             # Set the total concentration to be the same as previously
-            new_total_conc = sum(self.C[i] for i in group)
+            new_total_conc = np.sum(self.C[group])
             global_conc_scaling = total_conc / new_total_conc
             # Scale the concentrations to match the total concentration
-            for i in group:
-                self.C[i] *= global_conc_scaling
-
+            if new_total_conc != 0:
+                self.C[group] *= global_conc_scaling
+    
     def current(self):
-        I = 0
-        for i, solute in enumerate(self.solutes):
-            charge, D = solute.charge, solute.D
-            I += charge * D * (self.C[2*self.nsolutes+i] - self.C[self.nsolutes+i])
-        I *= 1e-4 * self.FAdx
-        return I
-
+        grads = self.C[2*self.nsolutes:3*self.nsolutes] - \
+            self.C[self.nsolutes:2*self.nsolutes]
+        return np.sum(grads * self.charges * self.Ds) * 1e-4 * self.FAdx
+    
     def runCV(
             self,
             E_min: float,
@@ -326,6 +361,7 @@ class CVSimulator:
         n_points    = len(potentials)
         currents    = np.zeros(n_points)
 
+        start = time.time()
         iteration_interval = int(n_points // 100)
         for index, E in enumerate(potentials):
             self.electrode_potential = E
@@ -334,7 +370,8 @@ class CVSimulator:
             currents[index] = self.current()
 
             if index % iteration_interval == 0:
-                print(f"{index*100 // n_points}% Completed")
+                print(f"{index*100 // n_points}% Completed, {time.time()-start} s")
+        print ("Time Taken: ", time.time() - start)
         return potentials, currents
 
     
