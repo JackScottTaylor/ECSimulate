@@ -179,6 +179,7 @@ class CVSimulator:
         self.C = solve_banded(
             self.l_and_u, self.A_banded, self.B_csr.dot(self.C)
             )
+        self.C[:self.nsolutes] = self.C[2*self.nsolutes:3*self.nsolutes]
         
 
     def redox_connectivity_matrix(self) -> np.ndarray:
@@ -363,14 +364,17 @@ class CVSimulator:
 
         start = time.time()
         iteration_interval = int(n_points // 100)
+        next_interval = iteration_interval
         for index, E in enumerate(potentials):
             self.electrode_potential = E
             self.Nernstian_equilibrium()
             self.update()
             currents[index] = self.current()
 
-            if index % iteration_interval == 0:
+            if index == next_interval:
                 print(f"{index*100 // n_points}% Completed, {time.time()-start} s")
+                next_interval += iteration_interval
+
         print ("Time Taken: ", time.time() - start)
         return potentials, currents
 

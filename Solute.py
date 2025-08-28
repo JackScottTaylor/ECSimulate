@@ -112,6 +112,9 @@ class Solute:
         A_banded[1, 1:-1] = 1 + 2*K
         # First row, reflective wall boundary condition
         A_banded[1, 0   ] = 1
+        # Change to true reflective boundary
+        A_banded[1, 0] = 1 + 2*K
+        A_banded[0, 1] = -2*K
         # Last row, constant concentration boundary condition
         A_banded[1, -1  ] = 1
         return A_banded
@@ -147,6 +150,11 @@ class Solute:
 
         # Assign the boundary condition values
         A_banded[1,0]   = 1
+        # Change to true reflective boundary
+        K = self.calculate_K_variable_dx(dt, dxs[0], dxs[0])
+        A_banded[1,0] = 1 + 2*K*dxs[0]
+        A_banded[0,1] = -2*K*dxs[0]
+
         A_banded[1,-1]  = 1
 
         return A_banded
@@ -214,6 +222,11 @@ class Solute:
 
         # Set the boundary conditions
         B[0,0], B[-1,-1] = 1, 1
+
+        # Try true reflectove boundary
+        K = self.calculate_K_variable_dx(dt, dxs[0], dxs[0])
+        B[0,0] = 1 - 2*K*dxs[0]
+        B[0,1] = 2*K*dxs[0]
 
         return B
     
