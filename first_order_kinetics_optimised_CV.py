@@ -94,6 +94,8 @@ class CVSimulator:
         self.construct_sparse_B()
 
         self.FAdx = - FARADAY_CONSTANT * A / (dxs[1] * 1e-2)
+        self.FA = - FARADAY_CONSTANT * A  # (C mol⁻¹) × (cm² or m², consistent with D)
+
         self.electrode_potential = 0.0
 
         self.redox_connectivity = self.extract_connected_groups(
@@ -362,7 +364,7 @@ class CVSimulator:
         currents    = np.zeros(n_points)
 
         start = time.time()
-        iteration_interval = int(n_points // 100)
+        iteration_interval = int(n_points // 5)
         next_interval = iteration_interval
         for index, E in enumerate(potentials):
             self.electrode_potential = E
@@ -373,6 +375,7 @@ class CVSimulator:
             if index == next_interval:
                 print(f"{index*100 // n_points}% Completed, {time.time()-start} s")
                 next_interval += iteration_interval
+                #plt.plot(self.C[::2])
 
         print ("Time Taken: ", time.time() - start)
         return potentials, currents
