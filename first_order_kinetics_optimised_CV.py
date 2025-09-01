@@ -179,7 +179,6 @@ class CVSimulator:
         self.C = solve_banded(
             self.l_and_u, self.A_banded, self.B_csr.dot(self.C)
             )
-        self.C[:self.nsolutes] = self.C[2*self.nsolutes:3*self.nsolutes]
         
 
     def redox_connectivity_matrix(self) -> np.ndarray:
