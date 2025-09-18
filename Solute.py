@@ -1,163 +1,136 @@
 import numpy as np
-from scipy.linalg import solve_banded
+from typing import List
+from numpy.typing import NDArray
+
+FARADAY_CONSTANT = 96485.3321233100184  # C/mol, Faraday's constant
+
+from .useful_functions import stretched_grid
 
 class Solute:
     '''
-    Represents a solute in a solution.
+    Class for representing a solute in a solution and generating relevant values
 
     :param name: The name of the solute
-    :param D: The diffusion coefficient of the solute in cm²s⁻¹
-    :param conc_bulk: The bulk concentration of the solute in mol dm⁻³
+    :param D: The diffusion coefficient in cm²s⁻¹
+    :param conc_bulk: The bulk concentration of the solute in M
     :param charge: The charge of the solute in e
     '''
     def __init__(
             self,
-            name:      str,
-            D:         float,
-            conc_bulk: float = 0.0,
-            charge:    int   = 0
-            ) -> None:
+            name:       str,
+            D:          float, # cm²s⁻¹
+            conc_bulk:  float, # mol dm⁻³
+            charge:     int = 0
+        ) -> None:
         self.name       = name
-        self.D          = D         # Diffusion coefficient in cm²s⁻¹
-        self.conc_bulk  = conc_bulk # Bulk concentration in mol dm⁻³
-        self.charge     = charge    # Charge in e
+        self.D          = D
+        self.conc_bulk  = conc_bulk * 1e-3 # mol cm⁻³
+        self.charge     = charge
 
 
-    def initialise_concentration(
-            self,
-            npoints: int
-            ) -> None:
-        '''
-        Sets up the concentrations of the solute in the solution by creating an 
-        array of length npoints, setting everywhere to the bulk concentration.
-
-        :param npoints: The number of points in the concentration array
-        '''
-        self.conc = np.array(
-            [self.conc_bulk] * npoints,
-            dtype=float
-            )
-        self.npoints = npoints
-
-    
     def calculate_K(
             self,
-            dx:  float,
-            dt:  float
-            ) -> float:
+            dt:     float,  # s
+            dx_j:   float,  # cm
+            dx_j1:  float   # cm
+        ) -> float:         # cm⁻¹
         '''
-        Calculates K = D*dt/2dx² (dimensionless)
+                                 2 D Δt
+        Calculates    K = ——————————————————————
+                           ΔxⱼΔxⱼ₋₁(Δxⱼ + Δxⱼ₋₁)
 
-        This value is used in constructing the matrices for modelling diffusion.
-        Note that diffusion constant is in cm²s⁻¹, which is why dx is in cm.
+        This value is used in the construction of the diffusion matrices.
 
-        :param dx: The spatial step size in cm
         :param dt: The time step in seconds
+        :param dx_j: The spatial separation between points j-1 and j in cm
+        :param dx_j1: The spatial separation between points j and j+1 in cm
+        :return: The calculated K value in cm⁻¹
         '''
-        K = self.D * dt / (2 * dx**2)
-        return K
-    
+        return 2 * self.D * dt / (dx_j*dx_j1*(dx_j+dx_j1))
 
-    def construct_A_banded_format(
+
+    def A_Diffusion(
             self,
-            dx: float,
-            dt: float
-            ) -> np.ndarray:
+            dxs:    NDArray[np.float64],    # cm
+            dt:     float,                  # s
+            theta:  float                   # 0 ≤ θ ≤ 1
+        ) -> NDArray[np.float64]:
         '''
-        Constructs the banded matrix A for modelling diffusion via the Crank-
-        Nicholson method, with a reflective wall boundary condition on the left
-        and a constant concentration boundary on the right.
+        Calculates the diffusion A-matrix for the solute
 
-        :return: The banded matrix A in the form accepted by the scipy linalg
-            banded solver.
+        :param dxs: Array of dx values for the simulation in cm
+        :param dt: The time step used in the simulation in s
+        :param theta: The implicitness factor, must be between 0 and 1 inclusive
+        :return: Square A-matrix for modelling diffusion of the solute.
         '''
-        K = self.calculate_K(dx, dt)
-        if not hasattr(self, 'npoints'):
-            raise ValueError("Concentration not initialised. " \
-                             "Concentration must be initialised first.")
+        # There are one more points than there are differences
+        npoints = len(dxs) + 1
+        A_diff = np.zeros((npoints, npoints))
+
+        # Calculate the interior values.
+        for j in range(1, npoints-1):
+            Kj = self.calculate_K(dt, dxs[j], dxs[j-1]) * theta # cm⁻¹
+            # Multiplication by a dx in each case makes the matrix dimensionless
+            A_diff[j,j-1]   = -Kj * dxs[j]
+            A_diff[j,j]     =  Kj*(dxs[j] + dxs[j-1]) + 1
+            A_diff[j,j+1]   = -Kj * dxs[j-1]
+
+        # Set Dirichlet boundary condition on the right
+        # i.e. it will always be the original bulk concentration value.
+        A_diff[-1, -1] = 1
+
+        # Set the zero-flux boundary condition on the left.
+        # This is achieved by imagining a point at x = -dx[0] so that the
+        # surface point can have second derivative calculated in the same way as
+        # all the other points. For zero flux condition is must equal conc at
+        # x = +dx[0]. Hence the 2K term off the main diagonal.
+        K = self.calculate_K(dt, dxs[0], dxs[0]) * dxs[0] * theta
+        A_diff[0,0]  = 1
+        A_diff[0, 1] = -1
         
-        # Initialise the banded matrix A
-        A_banded          = np.zeros((3, self.npoints))
-        # Upper diagonal all values equal to -K
-        A_banded[0, 1:  ] = -K
-        # Lower diagonal all but last value equal to -K
-        # Last value is 0 because of the constant concentration boundary
-        A_banded[2,  :-2] = -K
-        # Main diagonal, 1 + 2K equal everywhere except first and last
-        A_banded[1, 1:-1] = 1 + 2*K
-        # First row, reflective wall boundary condition
-        A_banded[1, 0   ] = 1 + K
-        # Last row, constant concentration boundary condition
-        A_banded[1, -1  ] = 1
-        return A_banded
+        return A_diff
     
 
-    def construct_B(
+    def B_Diffusion(
             self,
-            dx: float,
-            dt: float
-            ) -> np.ndarray:
+            dxs:    NDArray[np.float64],    # cm
+            dt:     float,                  # s
+            theta:  float                   # 0 ≤ θ ≤ 1
+        ) -> NDArray[np.float64]:
         '''
-        Constructs the matrix B for modelling diffusion via Crank-Nicholson
-        method, with a reflective wall boundary condition on the left and a
-        constant concentration boundary on the right. This is the matrix which
-        is applied on the future time-step side of the equation.
+        Calculates the diffusion B-matrix for the solute
 
-        :return: The matrix B in full format.
+        :param dxs: Array of dx values for the simulation in cm
+        :param dt: The time step used in the simulation in s
+        :param theta: The implicitness factor, must be between 0 and 1 inclusive
+        :return: Square A-matrix for modelling diffusion of the solute.
         '''
-        K = self.calculate_K(dx, dt)
-        if not hasattr(self, 'npoints'):
-            raise ValueError("Concentration not initialised. " \
-                             "Concentration must be initialised first.")
+        # There are one more points than there are differences
+        npoints = len(dxs) + 1
+        B_diff = np.zeros((npoints, npoints))
+
+        # Calculate the interior values.
+        for j in range(1, npoints-1):
+            Kj = self.calculate_K(dt, dxs[j], dxs[j-1]) * (1 - theta) # cm⁻¹
+            # Multiplication by a dx in each case makes the matrix dimensionless
+            B_diff[j,j-1]   =  Kj * dxs[j]
+            B_diff[j,j]     = -Kj*(dxs[j] + dxs[j-1]) + 1
+            B_diff[j,j+1]   =  Kj * dxs[j-1]
+
+        # Set Dirichlet boundary condition on the right
+        # i.e. it will always be the original bulk concentration value.
+        B_diff[-1, -1] = 1
+
+        # Set the zero-flux boundary condition on the left.
+        # This is achieved by imagining a point at x = -dx[0] so that the
+        # surface point can have second derivative calculated in the same way as
+        # all the other points. For zero flux condition is must equal conc at
+        # x = +dx[0]. Hence the 2K term off the main diagonal.
+        K = self.calculate_K(dt, dxs[0], dxs[0]) * dxs[0] * theta
+        B_diff[0,0]  = 0
+        B_diff[0, 1] = 0
         
-        # Initialise the matrix B
-        B = np.zeros((self.npoints, self.npoints))
+        return B_diff
 
-        # Set the non-boundary values
-        for i in range(1, self.npoints-1):
-            B[i, i-1] = K
-            B[i, i]   = 1 - 2*K
-            B[i, i+1] = K
 
-        # Reflective Wall Boundary Conditions
-        B[0, 0] = 1 - K
-        B[0, 1] = K
-        # Dirichlet Boundary Condition
-        B[-1, -1] = 1
-        return B
-    
 
-    def save_diffusion_matrices(
-            self,
-            dx: float,
-            dt: float
-            ) -> None:
-        '''
-        Construct and save the reusable matrices relevant for modelling
-        diffusion of the solute via the Crank-Nicholson technique.
-
-        :param dx: The spatial step size in cm
-        :param dt: The time step in seconds
-        '''
-        self.A_banded = self.construct_A_banded_format(dx, dt)
-        self.B        = self.construct_B(dx, dt)
-
-    
-    def diffuse(
-            self
-            ) -> None:
-        '''
-        Updates the concentration of the solute in the solution by allowing
-        diffusion to occur over one time step using the Crank-Nicholson method.
-        This method relies on the matrices A_banded and B being pre-computed
-        and stored in the solute object.
-        The time step and spatial step are set in the calculated matrices.
-
-        Effectively solves the equation A * conc_new = B * conc_old to obtain
-        the new concentrations.
-        '''
-        self.conc = solve_banded(
-            (1,1),
-            self.A_banded,
-            self.B @ self.conc
-            )
