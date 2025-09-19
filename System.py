@@ -55,6 +55,7 @@ class System:
         # Having the first two dxs be identical allows us to easily do a second
         # order approximation of the flux when calculating the current.
         self.dxs      = np.append(dxs[0], dxs)
+        self.xs       = np.append([0], np.cumsum(self.dxs))
         self.theta    = theta
 
         # Set to 0V initially
@@ -263,9 +264,9 @@ class System:
         # Apply the diffusion part using fast csr matrix
         y = self.B_diff_csr @ self.C
         # Calculate the required electron-transfer matrix
-        '''Bet = self.B_et_small(self.electrode_potential_previous)
+        Bet = self.B_et_small(self.electrode_potential_previous)
         # Apply only to the surface concentrations.
-        y[:self.nsolutes] += Bet @ self.C[:self.nsolutes]'''
+        y[:self.nsolutes] += Bet @ self.C[:self.nsolutes]
         return y
     
 
@@ -293,11 +294,8 @@ class System:
         fluxes = 4*self.C[self.nsolutes:2*self.nsolutes] - \
                  3*self.C[:self.nsolutes] - \
                  self.C[2*self.nsolutes:3*self.nsolutes]
-        return np.sum(fluxes * self._charges * self._Ds) * self._I_constant * 0.5 * 2
+        return np.sum(fluxes * self._charges * self._Ds) * self._I_constant
 
-
-
-from useful_functions import stretched_grid
 
 class CyclicVoltammogram(System):
     def __init__(

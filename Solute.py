@@ -85,8 +85,8 @@ class Solute:
         # all the other points. For zero flux condition is must equal conc at
         # x = +dx[0]. Hence the 2K term off the main diagonal.
         K = self.calculate_K(dt, dxs[0], dxs[0]) * dxs[0] * theta
-        A_diff[0,0]  = 1
-        A_diff[0, 1] = -1
+        A_diff[0,0]  = 1 + 2 * K
+        A_diff[0, 1] = - 2 * K
         
         return A_diff
     
@@ -127,8 +127,8 @@ class Solute:
         # all the other points. For zero flux condition is must equal conc at
         # x = +dx[0]. Hence the 2K term off the main diagonal.
         K = self.calculate_K(dt, dxs[0], dxs[0]) * dxs[0] * theta
-        B_diff[0,0]  = 0
-        B_diff[0, 1] = 0
+        B_diff[0,0]  = 1 - 2 * K
+        B_diff[0, 1] = 2 * K
         
         return B_diff
 
