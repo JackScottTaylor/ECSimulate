@@ -65,6 +65,10 @@ class CyclicVoltammogram(System):
         '''
         if ax == None: ax = plt.gca()
         if len(self.Es) < npoints: npoints = len(self.Es)
+        skip = int(self.Es // npoints)
+        ax.plot(self.Es[::skip], self.Is[::skip], **plot_kwargs)
+        ax.set_xlabel('Potential / V')
+        ax.set_ylabel('Current / mA')
     
 
 class CyclicVoltammogramAnimation(CyclicVoltammogram):
