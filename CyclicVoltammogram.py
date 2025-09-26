@@ -290,3 +290,11 @@ class CyclicVoltammogram(System):
                     init_func=init, blit=True, interval=1000 / fps)
         
         return ani
+    
+    def write_to_file(self, filename):
+        '''
+        Writes E, I to file
+        '''
+        with open(filename, 'w') as f:
+            for E, I in zip(self.Es, self.Is):
+                f.write(f'{E}\t{I}\n')
