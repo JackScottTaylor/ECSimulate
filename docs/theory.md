@@ -165,3 +165,132 @@ The most obvious way to implemt this methodology is to calculate once the matrix
 A useful point to note is that in this formulation, both $\textbf{A}$ and $\textbf{B}$ are tridiagonal matrices. An extremely efficient algorithm, "Thomas Algorithm", exists for solving these exact kind of equations and is the recommended method.
 
 In ECSimulate, the `solve_banded` method from `scipy` is used, as this allows for matrix equations with a general number of bands to be solved, which is required as we go beyond just modelling diffusion.
+
+## Boundary Conditions
+Some readers may have realised at this point that the previous derivation does not consider suitable boundary conditions. In fact if we suppose that a total of $N$ spatial points are being simulated, with the first point being at $x=0$ and the last point being at $x = N\Delta x$ then the diffusion equation for $C_0$ requires $C_{-1}$ and likewise at $C_{N-1}$, $C_N$ would be required. Therefore considering the boundary conditions essentially translates in to how we model these values.
+
+### Reflective Electrode Boundary
+In `ECSimulate` we consider the left boundary ($x=0$) to be the planar electrode. When only considering diffusion this is treated as a reflective boundary, i.e. there is no flux across the boundary.
+
+$$
+\frac{\partial C}{\partial x}\bigg|_{x=0} = 0
+$$
+
+We can find a suitable value for $C_{-1}$ by approximating the gradient at the boundary using a centralised finite differences approach.
+
+$$
+\frac{\partial C}{\partial x}\bigg|_{x=0} \approx \frac{C_{1} - C_{-1}}{2 \Delta x}
+$$
+
+Substituting this approximation in to the exact boundary condition yields the following condition on $C_{-1}$.
+
+$$
+C_{-1} = C_1
+$$
+
+When we write out the previous diffusion derivation for $C_0$ and replace all instances of $C_{-1}$ with $C_1$ we are left with the following.
+
+$$
+\begin{split}
+(1 + 2\theta\phi)C_0(t+\Delta t) - &2\theta\phi C_{1}(t+\Delta t) = 
+(1 - 2(1-\theta)\phi)C_0(t) + 2(1-\theta)\phi C_{1}(t) 
+\end{split}
+$$
+
+This is cleanly implemented in the top rows of the two banded diffusion matrices.
+
+$$
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+C_{3}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+C_{3}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+$$
+
+### Dirichlet Bulk Concentration Boundary
+On the right hand side of the simulated system, we consider this position to be far enough away from the electrode that this is the bulk solution and that this concentration does not change over the course of the simulated experiment.
+
+$$
+C_{N-1}(t + \Delta t) = C_{N-1}(t)
+$$
+
+This condition is directly implementable in the last row of the diffusion matrices, which after combination with the reflective electrode boundary give the final form of the diffusion matrices used by `ECSimulate`.
+
+$$
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots \\
+&& -\theta \phi & 1 + 2\theta\phi & -\theta\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+\vdots \\
+C_{N-2}(t+\Delta t) \\
+C_{N-1}(t+\Delta t)
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\\
+&& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+\vdots \\
+C_{N-2}(t) \\
+C_{N-1}(t) \\
+\end{pmatrix}
+\end{split}
+$$

@@ -601,6 +601,237 @@ C_{i+1}(t) \\
 <p>The most obvious way to implemt this methodology is to calculate once the matrix <span class="arithmatex"><span class="MathJax_Preview">\textbf{A}^{-1}\textbf{B}</span><script type="math/tex">\textbf{A}^{-1}\textbf{B}</script></span> as repeated left-multiplication by this matrix would iterate the concentrations. While this should in theory work, small floating-point errors may increase after large numbers of iterations leading to progressively less accurate simulations.</p>
 <p>A useful point to note is that in this formulation, both <span class="arithmatex"><span class="MathJax_Preview">\textbf{A}</span><script type="math/tex">\textbf{A}</script></span> and <span class="arithmatex"><span class="MathJax_Preview">\textbf{B}</span><script type="math/tex">\textbf{B}</script></span> are tridiagonal matrices. An extremely efficient algorithm, "Thomas Algorithm", exists for solving these exact kind of equations and is the recommended method.</p>
 <p>In ECSimulate, the <code>solve_banded</code> method from <code>scipy</code> is used, as this allows for matrix equations with a general number of bands to be solved, which is required as we go beyond just modelling diffusion.</p>
+<h2 id="boundary-conditions">Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permanent link">&para;</a></h2>
+<p>Some readers may have realised at this point that the previous derivation does not consider suitable boundary conditions. In fact if we suppose that a total of <span class="arithmatex"><span class="MathJax_Preview">N</span><script type="math/tex">N</script></span> spatial points are being simulated, with the first point being at <span class="arithmatex"><span class="MathJax_Preview">x=0</span><script type="math/tex">x=0</script></span> and the last point being at <span class="arithmatex"><span class="MathJax_Preview">x = N\Delta x</span><script type="math/tex">x = N\Delta x</script></span> then the diffusion equation for <span class="arithmatex"><span class="MathJax_Preview">C_0</span><script type="math/tex">C_0</script></span> requires <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> and likewise at <span class="arithmatex"><span class="MathJax_Preview">C_{N-1}</span><script type="math/tex">C_{N-1}</script></span>, <span class="arithmatex"><span class="MathJax_Preview">C_N</span><script type="math/tex">C_N</script></span> would be required. Therefore considering the boundary conditions essentially translates in to how we model these values.</p>
+<h3 id="reflective-electrode-boundary">Reflective Electrode Boundary<a class="headerlink" href="#reflective-electrode-boundary" title="Permanent link">&para;</a></h3>
+<p>In <code>ECSimulate</code> we consider the left boundary (<span class="arithmatex"><span class="MathJax_Preview">x=0</span><script type="math/tex">x=0</script></span>) to be the planar electrode. When only considering diffusion this is treated as a reflective boundary, i.e. there is no flux across the boundary.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial x}\bigg|_{x=0} = 0
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial x}\bigg|_{x=0} = 0
+</script>
+</div>
+<p>We can find a suitable value for <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> by approximating the gradient at the boundary using a centralised finite differences approach.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial x}\bigg|_{x=0} \approx \frac{C_{1} - C_{-1}}{2 \Delta x}
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial x}\bigg|_{x=0} \approx \frac{C_{1} - C_{-1}}{2 \Delta x}
+</script>
+</div>
+<p>Substituting this approximation in to the exact boundary condition yields the following condition on <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+C_{-1} = C_1
+</div>
+<script type="math/tex; mode=display">
+C_{-1} = C_1
+</script>
+</div>
+<p>When we write out the previous diffusion derivation for <span class="arithmatex"><span class="MathJax_Preview">C_0</span><script type="math/tex">C_0</script></span> and replace all instances of <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> with <span class="arithmatex"><span class="MathJax_Preview">C_1</span><script type="math/tex">C_1</script></span> we are left with the following.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+(1 + 2\theta\phi)C_0(t+\Delta t) - &amp;2\theta\phi C_{1}(t+\Delta t) = 
+(1 - 2(1-\theta)\phi)C_0(t) + 2(1-\theta)\phi C_{1}(t) 
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+(1 + 2\theta\phi)C_0(t+\Delta t) - &2\theta\phi C_{1}(t+\Delta t) = 
+(1 - 2(1-\theta)\phi)C_0(t) + 2(1-\theta)\phi C_{1}(t) 
+\end{split}
+</script>
+</div>
+<p>This is cleanly implemented in the top rows of the two banded diffusion matrices.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+&amp;
+\begin{pmatrix}
+1 + 2\theta \phi &amp; -2\theta \phi
+\\
+ -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+\\
+&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+C_{3}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\
+&amp;=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi &amp; 2(1-\theta) \phi
+\\
+ (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+\\
+&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+C_{3}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+C_{3}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+C_{3}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</script>
+</div>
+<h3 id="dirichlet-bulk-concentration-boundary">Dirichlet Bulk Concentration Boundary<a class="headerlink" href="#dirichlet-bulk-concentration-boundary" title="Permanent link">&para;</a></h3>
+<p>On the right hand side of the simulated system, we consider this position to be far enough away from the electrode that this is the bulk solution and that this concentration does not change over the course of the simulated experiment.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+C_{N-1}(t + \Delta t) = C_{N-1}(t)
+</div>
+<script type="math/tex; mode=display">
+C_{N-1}(t + \Delta t) = C_{N-1}(t)
+</script>
+</div>
+<p>This condition is directly implementable in the last row of the diffusion matrices, which after combination with the reflective electrode boundary give the final form of the diffusion matrices used by <code>ECSimulate</code>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+&amp;
+\begin{pmatrix}
+1 + 2\theta \phi &amp; -2\theta \phi
+\\
+ -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+\\
+&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots \\
+&amp;&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi \\
+&amp;&amp;&amp;&amp;1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+\vdots \\
+C_{N-2}(t+\Delta t) \\
+C_{N-1}(t+\Delta t)
+\end{pmatrix}
+= \\
+&amp;=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi &amp; 2(1-\theta) \phi
+\\
+ (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+\\
+&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\\
+&amp;&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi \\
+&amp;&amp;&amp;&amp;1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+\vdots \\
+C_{N-2}(t) \\
+C_{N-1}(t) \\
+\end{pmatrix}
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots \\
+&& -\theta \phi & 1 + 2\theta\phi & -\theta\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+\vdots \\
+C_{N-2}(t+\Delta t) \\
+C_{N-1}(t+\Delta t)
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\\
+&& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+\vdots \\
+C_{N-2}(t) \\
+C_{N-1}(t) \\
+\end{pmatrix}
+\end{split}
+</script>
+</div>
 
 
 
