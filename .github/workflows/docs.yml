@@ -3,7 +3,7 @@ name: Deploy Docs
 on:
   push:
     branches:
-      - main   # or 'master' if that's your default branch
+      - Documentation   # or 'master' if that's your default branch
 
 jobs:
   build:
