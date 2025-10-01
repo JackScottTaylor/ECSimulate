@@ -1,13 +1,17 @@
-name: Deploy Docs
+name: Deploy MkDocs site to GitHub Pages
 
 on:
   push:
     branches:
-      - Documentation   # or 'master' if that's your default branch
+      - Documentation        # or 'Documentation' while testing
+
+permissions:
+  contents: write   # needed to push to gh-pages
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -22,4 +26,6 @@ jobs:
 
       - name: Deploy with MkDocs
         run: mkdocs gh-deploy --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
