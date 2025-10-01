@@ -76,7 +76,7 @@ $$
 \begin{split}
 \Delta C_i(t, \Delta t) \approx D \Delta t \bigg(
 \theta &\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
-&+(1-\theta) \frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2}
+&+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
 \bigg)
 \end{split}
 $$
@@ -86,7 +86,7 @@ $$
 \begin{split}
 C_i(t + \Delta t) = C_i(t) +  D \Delta t \bigg(
 \theta &\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
-&+(1-\theta) \frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2}
+&+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
 \bigg)
 \end{split}
 $$
