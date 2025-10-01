@@ -1,0 +1,892 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package for simulating Electrochemistry">
+      
+      
+        <meta name="author" content="Jack Taylor">
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../user-guide/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Theory - ECSimulate</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ecsimulate-simulation-theory" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ECSimulate" class="md-header__button md-logo" aria-label="ECSimulate" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ECSimulate
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Theory
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="pink"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="pink"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/JackScottTaylor/ECSimulate" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ECSimulate" class="md-nav__button md-logo" aria-label="ECSimulate" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ECSimulate
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/JackScottTaylor/ECSimulate" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Theory
+    
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="ecsimulate-simulation-theory">ECSimulate Simulation Theory<a class="headerlink" href="#ecsimulate-simulation-theory" title="Permanent link">&para;</a></h1>
+<p>This document explains all of the theory behind how ECSimulate performs its various simulations. Every aspect should be covered with a rigorous yet understandable explanation.</p>
+<h1 id="discretisation">Discretisation<a class="headerlink" href="#discretisation" title="Permanent link">&para;</a></h1>
+<p>ECSimulate is a numerical simulation package and does not consider analytical solutions, therefore all functions are considered discretely. </p>
+<p>Concentration is modelled as a time-dependant vector over a set number of points. We will therefore adopt the notation <span class="arithmatex"><span class="MathJax_Preview">C_i(t)</span><script type="math/tex">C_i(t)</script></span> to denote the the concentration at the <span class="arithmatex"><span class="MathJax_Preview">i^\text{th}</span><script type="math/tex">i^\text{th}</script></span> position at time <span class="arithmatex"><span class="MathJax_Preview">t</span><script type="math/tex">t</script></span>.</p>
+<p>To exactly update the concentration at each spatial point, the following would have to be solved analytically.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+C_i(t+\Delta t) &amp;= C_i(t) + \int_0^{\Delta t}\frac{d C_i(t + T)}{dT} dT \\
+&amp;= C_i(t) + \Delta C_i(t, \Delta t)
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+C_i(t+\Delta t) &= C_i(t) + \int_0^{\Delta t}\frac{d C_i(t + T)}{dT} dT \\
+&= C_i(t) + \Delta C_i(t, \Delta t)
+\end{split}
+</script>
+</div>
+<p>However this is not possible exactly in a fully discrete simulation therefore the aim is to be able to accurately estimate the update function, <span class="arithmatex"><span class="MathJax_Preview">\Delta C_i(t, \Delta t)</span><script type="math/tex">\Delta C_i(t, \Delta t)</script></span>.</p>
+<h2 id="explicit-approximation">Explicit Approximation<a class="headerlink" href="#explicit-approximation" title="Permanent link">&para;</a></h2>
+<p>The perhaps most intuitive way to approximate the update function is to calculate the time derivative at the initial timepoint, and assume it does not change over the timestep , <span class="arithmatex"><span class="MathJax_Preview">\Delta t</span><script type="math/tex">\Delta t</script></span>. This can be summarised:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t)}{dt}
+</div>
+<script type="math/tex; mode=display">
+\Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t)}{dt}
+</script>
+</div>
+<p>This is the fully explicit method. It is known however that updating in this manner is not numerically stable, and can lead to unphysical values extremely quickly.</p>
+<p>If modelling concentration for example, then a suitably large time-derivative may lead to negative values, which is of course non-physical.</p>
+<p>This approximation is only suitable if small-enough time-steps can be used such that the change per step is relatively small and the time-derivative does not change significantly over that time.</p>
+<h2 id="implicit-approximation">Implicit Approximation<a class="headerlink" href="#implicit-approximation" title="Permanent link">&para;</a></h2>
+<p>A very similar but slightly less intuitive approximation is to not use the derivative calculated at the current time-step, but instead the future one.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t + \Delta t)}{dt}
+</div>
+<script type="math/tex; mode=display">
+\Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t + \Delta t)}{dt}
+</script>
+</div>
+<p>This method is often called the Backward-Euler method. Unlike the fully explicit approximation, this method is unconditionally stable, i.e. the numerical solutions will never explode to infinity.</p>
+<p>It is worth mentioning however that unconditional stability does not also imply accuracy. This method is known to often damp solutions such that changes are not as large as expected. However, as with the explicit formulation, decreasing the time-step should converge to the exact solution.</p>
+<p>Depending on how the time-derivative is calculated, calculating the future derivative may be straightforward or require an iterative process. In which case it is reasonable to consider whether reducing the timesteps for the explicit aproximation would be less computationally expensive for the same level of accuracy.</p>
+<h2 id="variable-implicitness">Variable Implicitness<a class="headerlink" href="#variable-implicitness" title="Permanent link">&para;</a></h2>
+<p>We have already discussed that the explicit method often leads to exploding solutions, whereas the implicit method can lead to over-damped solutions. It is reasonable then to consider if there is a good middle ground. Here we consider still approximating the time-derivative over the time-step, but approximating it as a weighted average of the current, and future time-steps.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\Delta C_i(t, \Delta t) \approx \Delta t \left( 
+\theta\frac{dC_i(t + \Delta t)}{dt} + 
+(1-\theta)\frac{dC_i(t)}{dt}
+\right)
+</div>
+<script type="math/tex; mode=display">
+\Delta C_i(t, \Delta t) \approx \Delta t \left( 
+\theta\frac{dC_i(t + \Delta t)}{dt} + 
+(1-\theta)\frac{dC_i(t)}{dt}
+\right)
+</script>
+</div>
+<p>By setting <span class="arithmatex"><span class="MathJax_Preview">\theta = 0.5</span><script type="math/tex">\theta = 0.5</script></span> the Crank-Nicholson formulation is found. Crank-Nicholson is also unconditionally stable and can often lead to more accurate results than the fully implicit method. </p>
+<p>Using Crank-Nicholson however can still lead to unwanted oscillations in the numerical solutions. The oscillations can be damped by increasing <span class="arithmatex"><span class="MathJax_Preview">\theta</span><script type="math/tex">\theta</script></span>. </p>
+<h1 id="diffusion">Diffusion<a class="headerlink" href="#diffusion" title="Permanent link">&para;</a></h1>
+<p>The concentration, <span class="arithmatex"><span class="MathJax_Preview">C</span><script type="math/tex">C</script></span>, of a species changes over time according to the diffusion equation, with associated diffusion coefficient <span class="arithmatex"><span class="MathJax_Preview">D</span><script type="math/tex">D</script></span>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial t} = D \nabla^2 C
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial t} = D \nabla^2 C
+</script>
+</div>
+<p>However when dealing with a planar electrode, it is the 1D diffusion equation which is usually considered.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial t} = D \frac{\partial^2 C}{\partial x^2}
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial t} = D \frac{\partial^2 C}{\partial x^2}
+</script>
+</div>
+<p>ECSimulate only considers 1D systems, so the following derivations concern only the 1D diffusion equation. </p>
+<h2 id="1d-discrete-diffusion">1D Discrete Diffusion<a class="headerlink" href="#1d-discrete-diffusion" title="Permanent link">&para;</a></h2>
+<p>Modelling the update to concentration at each time point according to any of the approximations to the update function described above relies on being able to approximate the second spatial derivative at each spatial position.</p>
+<p>In the first instance we will consider an evenly spaced spatial grid such that the <span class="arithmatex"><span class="MathJax_Preview">i^\text{th}</span><script type="math/tex">i^\text{th}</script></span> grid point corresponds to a distance <span class="arithmatex"><span class="MathJax_Preview">i\Delta x</span><script type="math/tex">i\Delta x</script></span> from the electrode boundary.</p>
+<p>We can then use a centered first-oder approximation to the second-derivative:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial^2 C_i}{\partial x^2} \approx \frac{C_{i-1} - 2C_i + C_{i+1}}{\Delta x ^2}
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial^2 C_i}{\partial x^2} \approx \frac{C_{i-1} - 2C_i + C_{i+1}}{\Delta x ^2}
+</script>
+</div>
+<p>We can now consider inserting this approximation into the variable implicitness approximation to obtain an estimate for the update function and obtain an equation describing how the concentration at each spatial and time point should change.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+\Delta C_i(t, \Delta t) \approx D \Delta t \bigg(
+\theta &amp;\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
+&amp;+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
+\bigg)
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+\Delta C_i(t, \Delta t) \approx D \Delta t \bigg(
+\theta &\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
+&+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
+\bigg)
+\end{split}
+</script>
+</div>
+<p>This update function is then used to describe how to update the concentration at each time step.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+C_i(t + \Delta t) = C_i(t) +  D \Delta t \bigg(
+\theta &amp;\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
+&amp;+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
+\bigg)
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+C_i(t + \Delta t) = C_i(t) +  D \Delta t \bigg(
+\theta &\frac{C_{i-1}(t+\Delta t) - 2C_i(t+\Delta t) + C_{i+1}(t+\Delta t)}{\Delta x ^2} + \\
+&+(1-\theta) \frac{C_{i-1}(t) - 2C_i(t) + C_{i+1}(t)}{\Delta x ^2}
+\bigg)
+\end{split}
+</script>
+</div>
+<p>Although this formulation looks terrible to actually then go and solve, it is in fact not that bad. The next step is to move all the future time-step coefficients to the LHS and the current time-step to the RHS. We will also intriduce the constant <span class="arithmatex"><span class="MathJax_Preview">\phi = {D \Delta t}/{\Delta x^2}</span><script type="math/tex">\phi = {D \Delta t}/{\Delta x^2}</script></span>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+(1 + 2\theta\phi)C_i(t+\Delta t) - &amp;\theta\phi C_{i-1}(t+\Delta t) - 
+\theta\phi C_{i-1}(t+\Delta t) = \\
+= &amp;(1 - 2(1-\theta)\phi)C_i(t) + (1-\theta)\phi C_{i-1}(t) + 
+(1-\theta)\phi C_{i-1}(t)
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+(1 + 2\theta\phi)C_i(t+\Delta t) - &\theta\phi C_{i-1}(t+\Delta t) - 
+\theta\phi C_{i-1}(t+\Delta t) = \\
+= &(1 - 2(1-\theta)\phi)C_i(t) + (1-\theta)\phi C_{i-1}(t) + 
+(1-\theta)\phi C_{i-1}(t)
+\end{split}
+</script>
+</div>
+<p>This can now be written in the form of a matrix equation, with one matrix acting on the vector of future time-step concentrations and another acting on the vector of current time-step concentrations.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\textbf{A}\textbf{C}_{t+\Delta t} = \textbf{B}\textbf{C}_{t}
+</div>
+<script type="math/tex; mode=display">
+\textbf{A}\textbf{C}_{t+\Delta t} = \textbf{B}\textbf{C}_{t}
+</script>
+</div>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+&amp;
+\begin{pmatrix}
+\ddots &amp; \ddots &amp; \ddots
+\\
+&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+\\
+&amp;&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+\vdots \\
+C_{i-1}(t+\Delta t) \\
+C_{i}(t+\Delta t) \\
+C_{i+1}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\&amp; =
+\begin{pmatrix}
+\ddots &amp; \ddots &amp; \ddots
+\\
+&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+\\
+&amp;&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+\vdots \\
+C_{i-1}(t) \\
+C_{i}(t) \\
+C_{i+1}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+&
+\begin{pmatrix}
+\ddots & \ddots & \ddots
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+&&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+\vdots \\
+C_{i-1}(t+\Delta t) \\
+C_{i}(t+\Delta t) \\
+C_{i+1}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\& =
+\begin{pmatrix}
+\ddots & \ddots & \ddots
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+&&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+\vdots \\
+C_{i-1}(t) \\
+C_{i}(t) \\
+C_{i+1}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</script>
+</div>
+<p>Now note that as written, the two matrices <span class="arithmatex"><span class="MathJax_Preview">\textbf{A}</span><script type="math/tex">\textbf{A}</script></span> and <span class="arithmatex"><span class="MathJax_Preview">\textbf{B}</span><script type="math/tex">\textbf{B}</script></span> are constants and do not need to be recomputed each step, hence obtaining the next step of concentrations becomes quite efficient.</p>
+<p>The most obvious way to implemt this methodology is to calculate once the matrix <span class="arithmatex"><span class="MathJax_Preview">\textbf{A}^{-1}\textbf{B}</span><script type="math/tex">\textbf{A}^{-1}\textbf{B}</script></span> as repeated left-multiplication by this matrix would iterate the concentrations. While this should in theory work, small floating-point errors may increase after large numbers of iterations leading to progressively less accurate simulations.</p>
+<p>A useful point to note is that in this formulation, both <span class="arithmatex"><span class="MathJax_Preview">\textbf{A}</span><script type="math/tex">\textbf{A}</script></span> and <span class="arithmatex"><span class="MathJax_Preview">\textbf{B}</span><script type="math/tex">\textbf{B}</script></span> are tridiagonal matrices. An extremely efficient algorithm, "Thomas Algorithm", exists for solving these exact kind of equations and is the recommended method.</p>
+<p>In ECSimulate, the <code>solve_banded</code> method from <code>scipy</code> is used, as this allows for matrix equations with a general number of bands to be solved, which is required as we go beyond just modelling diffusion.</p>
+<h2 id="boundary-conditions">Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permanent link">&para;</a></h2>
+<p>Some readers may have realised at this point that the previous derivation does not consider suitable boundary conditions. In fact if we suppose that a total of <span class="arithmatex"><span class="MathJax_Preview">N</span><script type="math/tex">N</script></span> spatial points are being simulated, with the first point being at <span class="arithmatex"><span class="MathJax_Preview">x=0</span><script type="math/tex">x=0</script></span> and the last point being at <span class="arithmatex"><span class="MathJax_Preview">x = N\Delta x</span><script type="math/tex">x = N\Delta x</script></span> then the diffusion equation for <span class="arithmatex"><span class="MathJax_Preview">C_0</span><script type="math/tex">C_0</script></span> requires <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> and likewise at <span class="arithmatex"><span class="MathJax_Preview">C_{N-1}</span><script type="math/tex">C_{N-1}</script></span>, <span class="arithmatex"><span class="MathJax_Preview">C_N</span><script type="math/tex">C_N</script></span> would be required. Therefore considering the boundary conditions essentially translates in to how we model these values.</p>
+<h3 id="reflective-electrode-boundary">Reflective Electrode Boundary<a class="headerlink" href="#reflective-electrode-boundary" title="Permanent link">&para;</a></h3>
+<p>In <code>ECSimulate</code> we consider the left boundary (<span class="arithmatex"><span class="MathJax_Preview">x=0</span><script type="math/tex">x=0</script></span>) to be the planar electrode. When only considering diffusion this is treated as a reflective boundary, i.e. there is no flux across the boundary.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial x}\bigg|_{x=0} = 0
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial x}\bigg|_{x=0} = 0
+</script>
+</div>
+<p>We can find a suitable value for <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> by approximating the gradient at the boundary using a centralised finite differences approach.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\frac{\partial C}{\partial x}\bigg|_{x=0} \approx \frac{C_{1} - C_{-1}}{2 \Delta x}
+</div>
+<script type="math/tex; mode=display">
+\frac{\partial C}{\partial x}\bigg|_{x=0} \approx \frac{C_{1} - C_{-1}}{2 \Delta x}
+</script>
+</div>
+<p>Substituting this approximation in to the exact boundary condition yields the following condition on <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+C_{-1} = C_1
+</div>
+<script type="math/tex; mode=display">
+C_{-1} = C_1
+</script>
+</div>
+<p>When we write out the previous diffusion derivation for <span class="arithmatex"><span class="MathJax_Preview">C_0</span><script type="math/tex">C_0</script></span> and replace all instances of <span class="arithmatex"><span class="MathJax_Preview">C_{-1}</span><script type="math/tex">C_{-1}</script></span> with <span class="arithmatex"><span class="MathJax_Preview">C_1</span><script type="math/tex">C_1</script></span> we are left with the following.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+(1 + 2\theta\phi)C_0(t+\Delta t) - &amp;2\theta\phi C_{1}(t+\Delta t) = 
+(1 - 2(1-\theta)\phi)C_0(t) + 2(1-\theta)\phi C_{1}(t) 
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+(1 + 2\theta\phi)C_0(t+\Delta t) - &2\theta\phi C_{1}(t+\Delta t) = 
+(1 - 2(1-\theta)\phi)C_0(t) + 2(1-\theta)\phi C_{1}(t) 
+\end{split}
+</script>
+</div>
+<p>This is cleanly implemented in the top rows of the two banded diffusion matrices.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+&amp;
+\begin{pmatrix}
+1 + 2\theta \phi &amp; -2\theta \phi
+\\
+ -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+\\
+&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+C_{3}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\
+&amp;=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi &amp; 2(1-\theta) \phi
+\\
+ (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+\\
+&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+C_{3}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+C_{3}(t+\Delta t) \\
+\vdots
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+C_{3}(t) \\
+\vdots
+\end{pmatrix}
+\end{split}
+</script>
+</div>
+<h3 id="dirichlet-bulk-concentration-boundary">Dirichlet Bulk Concentration Boundary<a class="headerlink" href="#dirichlet-bulk-concentration-boundary" title="Permanent link">&para;</a></h3>
+<p>On the right hand side of the simulated system, we consider this position to be far enough away from the electrode that this is the bulk solution and that this concentration does not change over the course of the simulated experiment.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+C_{N-1}(t + \Delta t) = C_{N-1}(t)
+</div>
+<script type="math/tex; mode=display">
+C_{N-1}(t + \Delta t) = C_{N-1}(t)
+</script>
+</div>
+<p>This condition is directly implementable in the last row of the diffusion matrices, which after combination with the reflective electrode boundary give the final form of the diffusion matrices used by <code>ECSimulate</code>.</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">
+\begin{split}
+&amp;
+\begin{pmatrix}
+1 + 2\theta \phi &amp; -2\theta \phi
+\\
+ -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+\\
+&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots \\
+&amp;&amp; -\theta \phi &amp; 1 + 2\theta\phi &amp; -\theta\phi \\
+&amp;&amp;&amp;&amp;1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+\vdots \\
+C_{N-2}(t+\Delta t) \\
+C_{N-1}(t+\Delta t)
+\end{pmatrix}
+= \\
+&amp;=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi &amp; 2(1-\theta) \phi
+\\
+ (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+\\
+&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi
+ \\
+&amp;\ddots &amp; \ddots &amp; \ddots
+\\
+&amp;&amp; (1-\theta) \phi &amp; 1 - 2(1-\theta)\phi &amp; (1-\theta)\phi \\
+&amp;&amp;&amp;&amp;1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+\vdots \\
+C_{N-2}(t) \\
+C_{N-1}(t) \\
+\end{pmatrix}
+\end{split}
+</div>
+<script type="math/tex; mode=display">
+\begin{split}
+&
+\begin{pmatrix}
+1 + 2\theta \phi & -2\theta \phi
+\\
+ -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+\\
+& -\theta \phi & 1 + 2\theta\phi & -\theta\phi
+ \\
+&\ddots & \ddots & \ddots \\
+&& -\theta \phi & 1 + 2\theta\phi & -\theta\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t+\Delta t) \\
+C_{1}(t+\Delta t) \\
+C_{2}(t+\Delta t) \\
+\vdots \\
+C_{N-2}(t+\Delta t) \\
+C_{N-1}(t+\Delta t)
+\end{pmatrix}
+= \\
+&=
+\begin{pmatrix}
+1 - 2(1-\theta) \phi & 2(1-\theta) \phi
+\\
+ (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+\\
+& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi
+ \\
+&\ddots & \ddots & \ddots
+\\
+&& (1-\theta) \phi & 1 - 2(1-\theta)\phi & (1-\theta)\phi \\
+&&&&1
+\end{pmatrix}
+\begin{pmatrix}
+C_{0}(t) \\
+C_{1}(t) \\
+C_{2}(t) \\
+\vdots \\
+C_{N-2}(t) \\
+C_{N-1}(t) \\
+\end{pmatrix}
+\end{split}
+</script>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.sections", "toc.integrate", "content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
