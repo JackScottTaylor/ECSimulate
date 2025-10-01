@@ -8,6 +8,7 @@ ECSimulate is a numerical simulation package and does not consider analytical so
 Concentration is modelled as a time-dependant vector over a set number of points. We will therefore adopt the notation $C_i(t)$ to denote the the concentration at the $i^\text{th}$ position at time $t$.
 
 To exactly update the concentration at each spatial point, the following would have to be solved analytically.
+
 $$
 \begin{split}
 C_i(t+\Delta t) &= C_i(t) + \int_0^{\Delta t}\frac{d C_i(t + T)}{dT} dT \\
@@ -19,9 +20,11 @@ However this is not possible exactly in a fully discrete simulation therefore th
 
 ## Explicit Approximation
 The perhaps most intuitive way to approximate the update function is to calculate the time derivative at the initial timepoint, and assume it does not change over the timestep , $\Delta t$. This can be summarised:
+
 $$
 \Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t)}{dt}
 $$
+
 This is the fully explicit method. It is known however that updating in this manner is not numerically stable, and can lead to unphysical values extremely quickly.
 
 If modelling concentration for example, then a suitably large time-derivative may lead to negative values, which is of course non-physical.
@@ -30,9 +33,11 @@ This approximation is only suitable if small-enough time-steps can be used such 
 
 ## Implicit Approximation
 A very similar but slightly less intuitive approximation is to not use the derivative calculated at the current time-step, but instead the future one.
+
 $$
 \Delta C_i(t, \Delta t) \approx \Delta t \frac{dC_i(t + \Delta t)}{dt}
 $$
+
 This method is often called the Backward-Euler method. Unlike the fully explicit approximation, this method is unconditionally stable, i.e. the numerical solutions will never explode to infinity.
 
 It is worth mentioning however that unconditional stability does not also imply accuracy. This method is known to often damp solutions such that changes are not as large as expected. However, as with the explicit formulation, decreasing the time-step should converge to the exact solution.
@@ -41,25 +46,31 @@ Depending on how the time-derivative is calculated, calculating the future deriv
 
 ## Variable Implicitness
 We have already discussed that the explicit method often leads to exploding solutions, whereas the implicit method can lead to over-damped solutions. It is reasonable then to consider if there is a good middle ground. Here we consider still approximating the time-derivative over the time-step, but approximating it as a weighted average of the current, and future time-steps.
+
 $$
 \Delta C_i(t, \Delta t) \approx \Delta t \left( 
 \theta\frac{dC_i(t + \Delta t)}{dt} + 
 (1-\theta)\frac{dC_i(t)}{dt}
 \right)
 $$
+
 By setting $\theta = 0.5$ the Crank-Nicholson formulation is found. Crank-Nicholson is also unconditionally stable and can often lead to more accurate results than the fully implicit method. 
 
 Using Crank-Nicholson however can still lead to unwanted oscillations in the numerical solutions. The oscillations can be damped by increasing $\theta$. 
 
 # Diffusion
 The concentration, $C$, of a species changes over time according to the diffusion equation, with associated diffusion coefficient $D$.
+
 $$
 \frac{\partial C}{\partial t} = D \nabla^2 C
 $$
+
 However when dealing with a planar electrode, it is the 1D diffusion equation which is usually considered.
+
 $$
 \frac{\partial C}{\partial t} = D \frac{\partial^2 C}{\partial x^2}
 $$
+
 ECSimulate only considers 1D systems, so the following derivations concern only the 1D diffusion equation. 
 
 ## 1D Discrete Diffusion
@@ -68,10 +79,13 @@ Modelling the update to concentration at each time point according to any of the
 In the first instance we will consider an evenly spaced spatial grid such that the $i^\text{th}$ grid point corresponds to a distance $i\Delta x$ from the electrode boundary.
 
 We can then use a centered first-oder approximation to the second-derivative:
+
 $$
 \frac{\partial^2 C_i}{\partial x^2} \approx \frac{C_{i-1} - 2C_i + C_{i+1}}{\Delta x ^2}
 $$
+
 We can now consider inserting this approximation into the variable implicitness approximation to obtain an estimate for the update function and obtain an equation describing how the concentration at each spatial and time point should change.
+
 $$
 \begin{split}
 \Delta C_i(t, \Delta t) \approx D \Delta t \bigg(
@@ -82,6 +96,7 @@ $$
 $$
 
 This update function is then used to describe how to update the concentration at each time step.
+
 $$
 \begin{split}
 C_i(t + \Delta t) = C_i(t) +  D \Delta t \bigg(
@@ -92,6 +107,7 @@ C_i(t + \Delta t) = C_i(t) +  D \Delta t \bigg(
 $$
 
 Although this formulation looks terrible to actually then go and solve, it is in fact not that bad. The next step is to move all the future time-step coefficients to the LHS and the current time-step to the RHS. We will also intriduce the constant $\phi = {D \Delta t}/{\Delta x^2}$.
+
 $$
 \begin{split}
 (1 + 2\theta\phi)C_i(t+\Delta t) - &\theta\phi C_{i-1}(t+\Delta t) - 
@@ -100,10 +116,13 @@ $$
 (1-\theta)\phi C_{i-1}(t)
 \end{split}
 $$
+
 This can now be written in the form of a matrix equation, with one matrix acting on the vector of future time-step concentrations and another acting on the vector of current time-step concentrations.
+
 $$
 \textbf{A}\textbf{C}_{t+\Delta t} = \textbf{B}\textbf{C}_{t}
 $$
+
 $$
 \begin{split}
 &
